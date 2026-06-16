@@ -74,7 +74,7 @@ function requireSha256(input, path) {
 }
 function requireRelativePath(input, path) {
     const value = requireNonEmptyString(input, path);
-    if (value.startsWith("/") || value.includes("..")) {
+    if (value.startsWith("/") || value.split("/").includes("..")) {
         throw new Error(`Invalid source-manifest: ${path} must stay inside the change directory`);
     }
     return value;
