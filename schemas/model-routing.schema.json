@@ -25,6 +25,42 @@
     },
     "controllerScenario": { "type": "string", "minLength": 1 },
     "defaultSubagentScenario": { "type": "string", "minLength": 1 },
-    "rules": { "type": "array" }
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/routingRule" }
+    }
+  },
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "routingRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario"],
+      "properties": {
+        "scenario": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$" },
+        "when": { "$ref": "#/$defs/routingRuleMatch" }
+      }
+    },
+    "routingRuleMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nodeIds": { "$ref": "#/$defs/stringList" },
+        "scopes": { "$ref": "#/$defs/stringList" },
+        "risks": {
+          "type": "array",
+          "items": { "enum": ["low", "medium", "high"] }
+        },
+        "modules": { "$ref": "#/$defs/stringList" },
+        "capabilities": { "$ref": "#/$defs/stringList" },
+        "files": { "$ref": "#/$defs/stringList" },
+        "objectiveIncludes": { "$ref": "#/$defs/stringList" },
+        "hasValidators": { "type": "boolean" },
+        "hasOutputs": { "type": "boolean" }
+      }
+    }
   }
 }
