@@ -1,0 +1,35 @@
+{
+  "name": "goal-contract",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared pipeline contract for goal-spec, goal-dag, and goal-runner.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/source-manifest.schema.json": "./schemas/source-manifest.schema.json",
+    "./schemas/goal-dag.schema.json": "./schemas/goal-dag.schema.json",
+    "./schemas/model-routing.schema.json": "./schemas/model-routing.schema.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/tests/*.test.js",
+    "check": "npm run build && npm test",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
