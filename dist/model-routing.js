@@ -1,34 +1,21 @@
 /**
  * Goal model-routing contract.
  *
- * Defines the canonical format for scenario-to-model routing tables
- * consumed by goal-dag and goal-runner.  Runtime model-resolution
- * functions such as `resolveControllerModelArg()` and
- * `selectModelScenarioForNode()` belong in goal-runner, not here.
+ * Shared DAG-level routing is intentionally abstract: producers choose
+ * scenario ids and modelClass values, while concrete provider/model ids are
+ * harness binding data resolved by goal-runner/adapters at runtime.
  */
-export const CANONICAL_MODEL_ID_PATTERN = /^[a-z][a-z0-9]*(?:[-_.][a-z][a-z0-9]*)*\/[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$/;
 // ---------------------------------------------------------------------------
 // Validators
 // ---------------------------------------------------------------------------
 const SCENARIO_ID_PATTERN = /^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$/;
-export function isCanonicalModelId(value) {
-    return CANONICAL_MODEL_ID_PATTERN.test(value);
-}
-export function requireCanonicalModelId(input, path) {
-    const value = requireNonEmptyString(input, path);
-    if (!isCanonicalModelId(value)) {
-        throw new Error(`Invalid model id at ${path}: ${JSON.stringify(value)} — ` +
-            `expected canonical provider/model format, e.g. openai-codex/gpt-5.5`);
-    }
-    return value;
-}
+const MODEL_CLASS_PATTERN = /^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$/;
 /**
  * Parse and validate a goal model-routing configuration object.
  *
- * This is the pure contract parser: it checks structure, scenario ids,
- * canonical model id format, and referential integrity of scenario
- * references.  It does *not* resolve controller or per-node model
- * selections — that is runtime behaviour owned by goal-runner.
+ * This parser rejects legacy concrete model routing (`scenario.model`) and
+ * accepts only `scenario.modelClass`. Concrete model ids belong in harness
+ * binding catalogs, not DAG runtime JSON or shared routing config.
  */
 export function parseGoalModelRoutingConfig(input, path = "modelRouting") {
     if (!isRecord(input)) {
@@ -44,12 +31,12 @@ export function parseGoalModelRoutingConfig(input, path = "modelRouting") {
         if (!isRecord(value)) {
             throw new Error(`Invalid goal model routing: ${path}.scenarios.${name} must be an object`);
         }
-        assertKnownKeys(value, ["model", "description"], `${path}.scenarios.${name}`);
-        const model = requireCanonicalModelId(value.model, `${path}.scenarios.${name}.model`);
+        assertKnownKeys(value, ["modelClass", "description"], `${path}.scenarios.${name}`);
+        const modelClass = requireModelClass(value.modelClass, `${path}.scenarios.${name}.modelClass`);
         const description = value.description === undefined
             ? undefined
             : requireNonEmptyString(value.description, `${path}.scenarios.${name}.description`);
-        scenarios[scenarioId] = description ? { model, description } : { model };
+        scenarios[scenarioId] = description ? { modelClass, description } : { modelClass };
     }
     if (Object.keys(scenarios).length === 0) {
         throw new Error(`Invalid goal model routing: ${path}.scenarios must not be empty`);
@@ -148,6 +135,13 @@ function requireScenarioId(input, path) {
     }
     return value;
 }
+function requireModelClass(input, path) {
+    const value = requireNonEmptyString(input, path);
+    if (!MODEL_CLASS_PATTERN.test(value)) {
+        throw new Error(`Invalid goal model routing: ${path} must match ${MODEL_CLASS_PATTERN.source}`);
+    }
+    return value;
+}
 function requireKnownScenario(input, scenarios, path) {
     const value = requireNonEmptyString(input, path);
     if (!(value in scenarios)) {
@@ -172,6 +166,9 @@ function assertKnownKeys(input, allowed, path) {
     const allowedSet = new Set(allowed);
     for (const key of Object.keys(input)) {
         if (!allowedSet.has(key)) {
+            if (key === "model") {
+                throw new Error(`Invalid goal model routing: ${path}.model is unsupported; use modelClass`);
+            }
             throw new Error(`Invalid goal model routing: ${path} has unsupported field ${JSON.stringify(key)}`);
         }
     }

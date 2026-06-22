@@ -1,59 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  isCanonicalModelId,
-  requireCanonicalModelId,
+  evaluateGoalModelBindingCompliance,
+  parseGoalModelBindingCatalog,
+  parseGoalModelClassCatalog,
+  parseGoalModelResolution,
   parseGoalModelRoutingConfig,
   parseGoalModelRoutingConfigJson,
-  CANONICAL_MODEL_ID_PATTERN,
-} from "../model-routing.js";
+} from "../index.js";
 
 const validConfig = {
   scenarios: {
-    controller: { model: "openai-codex/gpt-5.5" },
-    implementation: { model: "deepseek/deepseek-v4-pro", description: "medium-risk implementation" },
+    controller: { modelClass: "controller" },
+    implementation: { modelClass: "implementation", description: "medium-risk implementation" },
   },
   controllerScenario: "controller",
   defaultSubagentScenario: "implementation",
 };
 
-test("accepts provider/model id", () => {
-  assert.ok(isCanonicalModelId("openai-codex/gpt-5.5"));
-  assert.ok(isCanonicalModelId("deepseek/deepseek-v4-pro"));
-  assert.ok(isCanonicalModelId("anthropic/claude-opus"));
-  assert.ok(isCanonicalModelId("openai-codex/gpt-5.3-codex-spark"));
-});
-
-test("rejects provider.model id (dot)", () => {
-  assert.equal(isCanonicalModelId("openai-codex.gpt-5.5"), false);
-  assert.equal(isCanonicalModelId("openai.gpt-5.5"), false);
-});
-
-test("rejects unqualified id", () => {
-  assert.equal(isCanonicalModelId("gpt-5.5"), false);
-  assert.equal(isCanonicalModelId("model"), false);
-});
-
-test("rejects empty string", () => {
-  assert.equal(isCanonicalModelId(""), false);
-});
-
-test("requireCanonicalModelId throws for dot format", () => {
-  assert.throws(
-    () => requireCanonicalModelId("openai.gpt-5.5", "test"),
-    /canonical provider\/model/,
-  );
-});
-
-test("requireCanonicalModelId returns value for valid format", () => {
-  assert.equal(requireCanonicalModelId("openai-codex/gpt-5.5", "test"), "openai-codex/gpt-5.5");
-});
-
-test("accepts valid model routing config", () => {
+test("accepts valid modelClass routing config", () => {
   const config = parseGoalModelRoutingConfig(validConfig);
   assert.equal(config.controllerScenario, "controller");
   assert.equal(config.defaultSubagentScenario, "implementation");
-  assert.equal(config.scenarios.controller.model, "openai-codex/gpt-5.5");
+  assert.equal(config.scenarios.controller.modelClass, "controller");
 });
 
 test("accepts valid model routing config JSON string", () => {
@@ -75,19 +44,26 @@ test("rejects empty scenarios", () => {
   );
 });
 
-test("rejects scenario with dot-format model id", () => {
+test("rejects legacy concrete model scenario", () => {
   assert.throws(
     () => parseGoalModelRoutingConfig({
-      scenarios: { c: { model: "openai.gpt-5.5" } },
+      scenarios: { c: { model: "openai-codex/gpt-5.5" } },
     }),
-    /canonical provider\/model/,
+    /model is unsupported; use modelClass/,
+  );
+});
+
+test("rejects scenario without modelClass", () => {
+  assert.throws(
+    () => parseGoalModelRoutingConfig({ scenarios: { c: { description: "missing class" } } }),
+    /modelClass/,
   );
 });
 
 test("rejects controllerScenario referencing missing scenario", () => {
   assert.throws(
     () => parseGoalModelRoutingConfig({
-      scenarios: { c: { model: "openai-codex/gpt-5.5" } },
+      scenarios: { c: { modelClass: "controller" } },
       controllerScenario: "missing",
     }),
     /unknown scenario/,
@@ -97,7 +73,7 @@ test("rejects controllerScenario referencing missing scenario", () => {
 test("rejects rule scenario referencing missing scenario", () => {
   assert.throws(
     () => parseGoalModelRoutingConfig({
-      scenarios: { c: { model: "openai-codex/gpt-5.5" } },
+      scenarios: { c: { modelClass: "controller" } },
       rules: [{ scenario: "missing" }],
     }),
     /unknown scenario/,
@@ -133,30 +109,119 @@ test("rejects extra root keys in config", () => {
 test("rejects extra keys in scenario definition", () => {
   assert.throws(
     () => parseGoalModelRoutingConfig({
-      scenarios: { c: { model: "openai-codex/gpt-5.5", extra: 1 } },
+      scenarios: { c: { modelClass: "controller", extra: 1 } },
     }),
     /unsupported field/,
   );
 });
 
-test("rejects non-object scenarios value", () => {
-  assert.throws(
-    () => parseGoalModelRoutingConfig({ scenarios: "bad" }),
-    /scenarios/,
-  );
+test("binding catalog parses", () => {
+  const catalog = parseGoalModelBindingCatalog({
+    version: 1,
+    harness: "pi",
+    bindings: {
+      controller: {
+        model: "openai-codex/gpt-5.5",
+        declaredCapabilities: { reasoning: "very_high", contextWindowTokens: 256000, toolUse: "required" },
+      },
+    },
+  });
+  assert.equal(catalog.bindings.controller.model, "openai-codex/gpt-5.5");
 });
 
-test("pattern accepts typical model ids", () => {
-  const ids = [
-    "openai-codex/gpt-5.5",
-    "openai-codex/gpt-5.3-codex-spark",
-    "deepseek/deepseek-v4-pro",
-    "deepseek/deepseek-v4-flash",
-    "anthropic/claude-opus",
-    "local-aeon/aeon",
-    "openai/gpt-5-mini",
-  ];
-  for (const id of ids) {
-    assert.ok(CANONICAL_MODEL_ID_PATTERN.test(id), `expected match: ${id}`);
-  }
+test("resolution report parses", () => {
+  const report = parseGoalModelResolution({
+    schemaVersion: "1.0",
+    harness: "pi",
+    requested: {
+      modelScenario: "controller",
+      modelClass: "controller",
+      minimumRequirements: { reasoning: "high" },
+    },
+    resolved: { model: "openai-codex/gpt-5.5", bindingSource: "catalogs/bindings/pi.json" },
+    compliance: { satisfiesMinimum: true, downgraded: false, missingCapabilities: [] },
+    status: "resolved",
+  });
+  assert.equal(report.status, "resolved");
+});
+
+test("binding compliance passes when capabilities satisfy requirements", () => {
+  const classes = parseGoalModelClassCatalog({
+    version: 1,
+    modelClasses: {
+      controller: {
+        minimumRequirements: { reasoning: "high", toolUse: "required" },
+        fallbackPolicy: { allowDowngrade: false, onUnavailable: "block" },
+      },
+    },
+  });
+  const binding = parseGoalModelBindingCatalog({
+    version: 1,
+    harness: "pi",
+    bindings: {
+      controller: {
+        model: "openai-codex/gpt-5.5",
+        declaredCapabilities: { reasoning: "very_high", toolUse: "required" },
+      },
+    },
+  }).bindings.controller;
+  const compliance = evaluateGoalModelBindingCompliance(classes.modelClasses.controller, binding);
+  assert.equal(compliance.status, "resolved");
+  assert.equal(compliance.satisfiesMinimum, true);
+});
+
+test("binding compliance blocks when required very_high reasoning is missing", () => {
+  const classes = parseGoalModelClassCatalog({
+    version: 1,
+    modelClasses: {
+      "value-judge": {
+        minimumRequirements: { reasoning: "very_high" },
+        fallbackPolicy: { allowDowngrade: false, onUnavailable: "block" },
+      },
+    },
+  });
+  const binding = parseGoalModelBindingCatalog({
+    version: 1,
+    harness: "pi",
+    bindings: {
+      "value-judge": {
+        model: "deepseek/deepseek-v4-pro",
+        declaredCapabilities: { reasoning: "high" },
+      },
+    },
+  }).bindings["value-judge"];
+  const compliance = evaluateGoalModelBindingCompliance(classes.modelClasses["value-judge"], binding);
+  assert.equal(compliance.status, "blocked");
+  assert.deepEqual(compliance.missingCapabilities, ["reasoning"]);
+});
+
+test("downgrade is only allowed when fallbackPolicy.allowDowngrade=true", () => {
+  const blockedClass = parseGoalModelClassCatalog({
+    version: 1,
+    modelClasses: {
+      strict: {
+        minimumRequirements: { reasoning: "very_high" },
+        fallbackPolicy: { allowDowngrade: false, onUnavailable: "block" },
+      },
+    },
+  }).modelClasses.strict;
+  const warnClass = parseGoalModelClassCatalog({
+    version: 1,
+    modelClasses: {
+      lenient: {
+        minimumRequirements: { reasoning: "very_high" },
+        fallbackPolicy: { allowDowngrade: true, onUnavailable: "warn" },
+      },
+    },
+  }).modelClasses.lenient;
+  const binding = parseGoalModelBindingCatalog({
+    version: 1,
+    harness: "pi",
+    bindings: {
+      candidate: { model: "some/model", declaredCapabilities: { reasoning: "high" } },
+    },
+  }).bindings.candidate;
+
+  assert.equal(evaluateGoalModelBindingCompliance(blockedClass, binding).status, "blocked");
+  assert.equal(evaluateGoalModelBindingCompliance(warnClass, binding).status, "warn");
 });

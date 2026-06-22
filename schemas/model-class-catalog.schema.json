@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a5345534/goal-contract/schemas/model-class-catalog.schema.json",
+  "title": "Goal Model Class Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "modelClasses"],
+  "properties": {
+    "version": { "const": 1 },
+    "modelClasses": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/modelClassId" },
+      "additionalProperties": { "$ref": "#/$defs/modelClass" }
+    }
+  },
+  "$defs": {
+    "modelClassId": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$" },
+    "capabilityLevel": { "enum": ["none", "low", "medium", "high", "very_high"] },
+    "minimumRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reasoning": { "$ref": "#/$defs/capabilityLevel" },
+        "contextWindowTokens": { "type": "integer", "minimum": 1 },
+        "toolUse": { "enum": ["none", "optional", "required"] },
+        "structuredOutput": { "enum": ["none", "preferred", "strict"] },
+        "formatFollowing": { "$ref": "#/$defs/capabilityLevel" },
+        "sourceCitation": { "enum": ["none", "preferred", "required"] },
+        "costSensitivity": { "enum": ["low", "medium", "high"] },
+        "privacy": { "enum": ["cloud-ok", "local-only"] }
+      }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowDowngrade", "onUnavailable"],
+      "properties": {
+        "allowDowngrade": { "type": "boolean" },
+        "onUnavailable": { "enum": ["block", "warn"] }
+      }
+    },
+    "modelClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimumRequirements", "fallbackPolicy"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "minimumRequirements": { "$ref": "#/$defs/minimumRequirements" },
+        "fallbackPolicy": { "$ref": "#/$defs/fallbackPolicy" }
+      }
+    }
+  }
+}

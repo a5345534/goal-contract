@@ -12,11 +12,18 @@
     },
     "./schemas/source-manifest.schema.json": "./schemas/source-manifest.schema.json",
     "./schemas/goal-dag.schema.json": "./schemas/goal-dag.schema.json",
-    "./schemas/model-routing.schema.json": "./schemas/model-routing.schema.json"
+    "./schemas/model-routing.schema.json": "./schemas/model-routing.schema.json",
+    "./schemas/model-class-catalog.schema.json": "./schemas/model-class-catalog.schema.json",
+    "./schemas/model-binding.schema.json": "./schemas/model-binding.schema.json",
+    "./schemas/model-resolution.schema.json": "./schemas/model-resolution.schema.json",
+    "./catalogs/model-classes.json": "./catalogs/model-classes.json",
+    "./catalogs/bindings/pi.json": "./catalogs/bindings/pi.json",
+    "./catalogs/bindings/opencode.json": "./catalogs/bindings/opencode.json"
   },
   "files": [
     "dist",
     "schemas",
+    "catalogs",
     "README.md"
   ],
   "scripts": {

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a5345534/goal-contract/schemas/model-resolution.schema.json",
+  "title": "Goal Model Resolution Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "harness", "requested", "compliance", "status"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "harness": { "type": "string", "minLength": 1 },
+    "requested": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modelClass", "minimumRequirements"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "modelScenario": { "type": "string", "minLength": 1 },
+        "modelClass": { "type": "string", "minLength": 1 },
+        "minimumRequirements": { "$ref": "#/$defs/minimumRequirements" }
+      }
+    },
+    "resolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model"],
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "bindingSource": { "type": "string", "minLength": 1 }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["satisfiesMinimum", "downgraded", "missingCapabilities"],
+      "properties": {
+        "satisfiesMinimum": { "type": "boolean" },
+        "downgraded": { "type": "boolean" },
+        "missingCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "status": { "enum": ["resolved", "blocked", "warn"] },
+    "reason": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "capabilityLevel": { "enum": ["none", "low", "medium", "high", "very_high"] },
+    "minimumRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reasoning": { "$ref": "#/$defs/capabilityLevel" },
+        "contextWindowTokens": { "type": "integer", "minimum": 1 },
+        "toolUse": { "enum": ["none", "optional", "required"] },
+        "structuredOutput": { "enum": ["none", "preferred", "strict"] },
+        "formatFollowing": { "$ref": "#/$defs/capabilityLevel" },
+        "sourceCitation": { "enum": ["none", "preferred", "required"] },
+        "costSensitivity": { "enum": ["low", "medium", "high"] },
+        "privacy": { "enum": ["cloud-ok", "local-only"] }
+      }
+    }
+  }
+}

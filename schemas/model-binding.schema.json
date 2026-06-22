@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a5345534/goal-contract/schemas/model-binding.schema.json",
+  "title": "Goal Model Binding Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "harness", "bindings"],
+  "properties": {
+    "version": { "const": 1 },
+    "harness": { "type": "string", "minLength": 1 },
+    "bindings": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/binding" }
+    }
+  },
+  "$defs": {
+    "capabilityLevel": { "enum": ["none", "low", "medium", "high", "very_high"] },
+    "minimumRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reasoning": { "$ref": "#/$defs/capabilityLevel" },
+        "contextWindowTokens": { "type": "integer", "minimum": 1 },
+        "toolUse": { "enum": ["none", "optional", "required"] },
+        "structuredOutput": { "enum": ["none", "preferred", "strict"] },
+        "formatFollowing": { "$ref": "#/$defs/capabilityLevel" },
+        "sourceCitation": { "enum": ["none", "preferred", "required"] },
+        "costSensitivity": { "enum": ["low", "medium", "high"] },
+        "privacy": { "enum": ["cloud-ok", "local-only"] }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "declaredCapabilities"],
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "declaredCapabilities": { "$ref": "#/$defs/minimumRequirements" },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

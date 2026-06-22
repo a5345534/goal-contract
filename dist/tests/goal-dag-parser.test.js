@@ -12,8 +12,8 @@ const validDag = {
     objective: "Complete backend slices",
     modelRouting: {
         scenarios: {
-            controller: { model: "openai-codex/gpt-5.5" },
-            implementation: { model: "deepseek/deepseek-v4-pro" },
+            controller: { modelClass: "controller" },
+            implementation: { modelClass: "implementation" },
         },
         controllerScenario: "controller",
     },
@@ -78,8 +78,8 @@ test("accepts full valid DAG with defaults and model routing", () => {
         },
         modelRouting: {
             scenarios: {
-                controller: { model: "openai-codex/gpt-5.5" },
-                implementation: { model: "deepseek/deepseek-v4-pro" },
+                controller: { modelClass: "controller" },
+                implementation: { modelClass: "implementation" },
             },
         },
         nodes: [
@@ -200,7 +200,7 @@ test("rejects unknown modelScenario", () => {
     assert.throws(() => parseGoalDagFileDocument({
         version: 1,
         objective: "x",
-        modelRouting: { scenarios: { docs: { model: "openai/gpt" } } },
+        modelRouting: { scenarios: { docs: { modelClass: "implementation" } } },
         nodes: [{ id: "a", objective: "x", modelScenario: "missing" }],
     }), /unknown model scenario/);
 });

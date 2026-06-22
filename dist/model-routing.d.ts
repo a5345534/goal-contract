@@ -1,15 +1,13 @@
 /**
  * Goal model-routing contract.
  *
- * Defines the canonical format for scenario-to-model routing tables
- * consumed by goal-dag and goal-runner.  Runtime model-resolution
- * functions such as `resolveControllerModelArg()` and
- * `selectModelScenarioForNode()` belong in goal-runner, not here.
+ * Shared DAG-level routing is intentionally abstract: producers choose
+ * scenario ids and modelClass values, while concrete provider/model ids are
+ * harness binding data resolved by goal-runner/adapters at runtime.
  */
 export type GoalDagRisk = "low" | "medium" | "high";
-export declare const CANONICAL_MODEL_ID_PATTERN: RegExp;
 export interface GoalModelScenario {
-    model: string;
+    modelClass: string;
     description?: string;
 }
 export interface GoalModelRoutingRuleMatch {
@@ -33,15 +31,12 @@ export interface GoalModelRoutingConfig {
     defaultSubagentScenario?: string;
     rules?: GoalModelRoutingRule[];
 }
-export declare function isCanonicalModelId(value: string): boolean;
-export declare function requireCanonicalModelId(input: unknown, path: string): string;
 /**
  * Parse and validate a goal model-routing configuration object.
  *
- * This is the pure contract parser: it checks structure, scenario ids,
- * canonical model id format, and referential integrity of scenario
- * references.  It does *not* resolve controller or per-node model
- * selections — that is runtime behaviour owned by goal-runner.
+ * This parser rejects legacy concrete model routing (`scenario.model`) and
+ * accepts only `scenario.modelClass`. Concrete model ids belong in harness
+ * binding catalogs, not DAG runtime JSON or shared routing config.
  */
 export declare function parseGoalModelRoutingConfig(input: unknown, path?: string): GoalModelRoutingConfig;
 export declare function parseGoalModelRoutingConfigJson(json: string, path?: string): GoalModelRoutingConfig;

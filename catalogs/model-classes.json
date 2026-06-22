@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "modelClasses": {
+    "controller": {
+      "description": "DAG controller orchestration and runtime decisions",
+      "minimumRequirements": {
+        "reasoning": "high",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "high",
+        "sourceCitation": "preferred",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "implementation": {
+      "description": "General code implementation with repository tools",
+      "minimumRequirements": {
+        "reasoning": "medium",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "medium",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "strict-reviewer": {
+      "description": "High-scrutiny review, audit, and validation",
+      "minimumRequirements": {
+        "reasoning": "high",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "strict",
+        "formatFollowing": "high",
+        "sourceCitation": "preferred",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "evidence-collector": {
+      "description": "Long-context source collection without value judgment",
+      "minimumRequirements": {
+        "reasoning": "medium",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "medium",
+        "sourceCitation": "required",
+        "costSensitivity": "high",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "value-judge": {
+      "description": "Value-gate and decision review judge",
+      "minimumRequirements": {
+        "reasoning": "very_high",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "strict",
+        "formatFollowing": "high",
+        "sourceCitation": "required",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "spec-writer": {
+      "description": "OpenSpec package writing from approved kernel",
+      "minimumRequirements": {
+        "reasoning": "high",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "strict",
+        "formatFollowing": "high",
+        "sourceCitation": "required",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "explainer-writer": {
+      "description": "Decision-review explainer authoring",
+      "minimumRequirements": {
+        "reasoning": "medium",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "high",
+        "sourceCitation": "required",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    }
+  }
+}
