@@ -97,6 +97,48 @@
         "privacy": "cloud-ok"
       },
       "fallbackPolicy": { "allowDowngrade": false, "onUnavailable": "block" }
+    },
+    "frontier": {
+      "description": "Highest-capability frontier models for complex orchestration and architecture",
+      "minimumRequirements": {
+        "reasoning": "very_high",
+        "contextWindowTokens": 200000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "high",
+        "sourceCitation": "preferred",
+        "costSensitivity": "low",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": true, "onUnavailable": "fallback-to-implementation" }
+    },
+    "reasoning": {
+      "description": "Strong reasoning models for implementation and review tasks",
+      "minimumRequirements": {
+        "reasoning": "high",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "high",
+        "sourceCitation": "preferred",
+        "costSensitivity": "medium",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": true, "onUnavailable": "fallback-to-implementation" }
+    },
+    "spark": {
+      "description": "Fast, cost-efficient models for documentation and low-risk generation",
+      "minimumRequirements": {
+        "reasoning": "low",
+        "contextWindowTokens": 128000,
+        "toolUse": "required",
+        "structuredOutput": "preferred",
+        "formatFollowing": "medium",
+        "sourceCitation": "preferred",
+        "costSensitivity": "high",
+        "privacy": "cloud-ok"
+      },
+      "fallbackPolicy": { "allowDowngrade": true, "onUnavailable": "fallback-to-implementation" }
     }
   }
 }
