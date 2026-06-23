@@ -16,9 +16,7 @@
     "./schemas/model-class-catalog.schema.json": "./schemas/model-class-catalog.schema.json",
     "./schemas/model-binding.schema.json": "./schemas/model-binding.schema.json",
     "./schemas/model-resolution.schema.json": "./schemas/model-resolution.schema.json",
-    "./catalogs/model-classes.json": "./catalogs/model-classes.json",
-    "./catalogs/bindings/pi.json": "./catalogs/bindings/pi.json",
-    "./catalogs/bindings/opencode.json": "./catalogs/bindings/opencode.json"
+    "./catalogs/model-classes.json": "./catalogs/model-classes.json"
   },
   "files": [
     "dist",
