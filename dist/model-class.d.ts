@@ -11,7 +11,7 @@ export interface GoalModelMinimumRequirements {
 }
 export interface GoalModelFallbackPolicy {
     allowDowngrade: boolean;
-    onUnavailable: "block" | "warn";
+    onUnavailable: "block" | "warn" | "fallback-to-implementation";
 }
 export interface GoalModelClass {
     description?: string;

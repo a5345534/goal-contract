@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   evaluateGoalModelBindingCompliance,
   parseGoalModelBindingCatalog,
@@ -28,6 +29,12 @@ test("accepts valid modelClass routing config", () => {
 test("accepts valid model routing config JSON string", () => {
   const config = parseGoalModelRoutingConfigJson(JSON.stringify(validConfig));
   assert.equal(config.controllerScenario, "controller");
+});
+
+test("bundled model class catalog parses", () => {
+  const catalogUrl = new URL("../../catalogs/model-classes.json", import.meta.url);
+  const catalog = parseGoalModelClassCatalog(JSON.parse(readFileSync(catalogUrl, "utf8")), "catalogs/model-classes.json");
+  assert.equal(catalog.modelClasses.frontier?.fallbackPolicy.onUnavailable, "fallback-to-implementation");
 });
 
 test("rejects missing scenarios", () => {
@@ -214,6 +221,15 @@ test("downgrade is only allowed when fallbackPolicy.allowDowngrade=true", () => 
       },
     },
   }).modelClasses.lenient;
+  const fallbackClass = parseGoalModelClassCatalog({
+    version: 1,
+    modelClasses: {
+      fallback: {
+        minimumRequirements: { reasoning: "very_high" },
+        fallbackPolicy: { allowDowngrade: true, onUnavailable: "fallback-to-implementation" },
+      },
+    },
+  }).modelClasses.fallback;
   const binding = parseGoalModelBindingCatalog({
     version: 1,
     harness: "pi",
@@ -224,4 +240,5 @@ test("downgrade is only allowed when fallbackPolicy.allowDowngrade=true", () => 
 
   assert.equal(evaluateGoalModelBindingCompliance(blockedClass, binding).status, "blocked");
   assert.equal(evaluateGoalModelBindingCompliance(warnClass, binding).status, "warn");
+  assert.equal(evaluateGoalModelBindingCompliance(fallbackClass, binding).status, "warn");
 });

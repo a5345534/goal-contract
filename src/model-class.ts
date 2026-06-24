@@ -13,7 +13,7 @@ export interface GoalModelMinimumRequirements {
 
 export interface GoalModelFallbackPolicy {
   allowDowngrade: boolean;
-  onUnavailable: "block" | "warn";
+  onUnavailable: "block" | "warn" | "fallback-to-implementation";
 }
 
 export interface GoalModelClass {
@@ -83,7 +83,7 @@ export function parseGoalModelFallbackPolicy(input: unknown, path: string): Goal
   if (typeof input.allowDowngrade !== "boolean") throw new Error(`Invalid goal model fallback policy: ${path}.allowDowngrade must be a boolean`);
   return {
     allowDowngrade: input.allowDowngrade,
-    onUnavailable: parseEnum(input.onUnavailable, ["block", "warn"] as const, `${path}.onUnavailable`),
+    onUnavailable: parseEnum(input.onUnavailable, ["block", "warn", "fallback-to-implementation"] as const, `${path}.onUnavailable`),
   };
 }
 

@@ -66,7 +66,7 @@ export function parseGoalModelFallbackPolicy(input, path) {
         throw new Error(`Invalid goal model fallback policy: ${path}.allowDowngrade must be a boolean`);
     return {
         allowDowngrade: input.allowDowngrade,
-        onUnavailable: parseEnum(input.onUnavailable, ["block", "warn"], `${path}.onUnavailable`),
+        onUnavailable: parseEnum(input.onUnavailable, ["block", "warn", "fallback-to-implementation"], `${path}.onUnavailable`),
     };
 }
 export function requireKnownModelClass(catalog, modelClass, path = "modelClass") {

@@ -37,7 +37,7 @@
       "required": ["allowDowngrade", "onUnavailable"],
       "properties": {
         "allowDowngrade": { "type": "boolean" },
-        "onUnavailable": { "enum": ["block", "warn"] }
+        "onUnavailable": { "enum": ["block", "warn", "fallback-to-implementation"] }
       }
     },
     "modelClass": {

@@ -43,7 +43,8 @@ export function evaluateGoalModelBindingCompliance(modelClass, binding) {
     const downgraded = !satisfiesMinimum;
     if (satisfiesMinimum)
         return { satisfiesMinimum, downgraded: false, missingCapabilities: [], status: "resolved" };
-    if (modelClass.fallbackPolicy.allowDowngrade && modelClass.fallbackPolicy.onUnavailable === "warn") {
+    if (modelClass.fallbackPolicy.allowDowngrade &&
+        (modelClass.fallbackPolicy.onUnavailable === "warn" || modelClass.fallbackPolicy.onUnavailable === "fallback-to-implementation")) {
         return { satisfiesMinimum, downgraded, missingCapabilities, status: "warn" };
     }
     return { satisfiesMinimum, downgraded, missingCapabilities, status: "blocked" };
