@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a5345534/goal-contract/schemas/choice-action-selection-result.schema.json",
+  "title": "Choice Action Selection Result",
+  "description": "Normalized selection result for a completed ChoiceActionRequest. Identifies the request, selected choice, selection mode, and render method, independent of the harness presentation widget.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requestId", "choiceId", "canonicalValue", "inputMode", "renderMode", "selectedAt"],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Matches the request id of the original choice/action request."
+    },
+    "choiceId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The id of the selected choice."
+    },
+    "canonicalValue": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The canonical value of the selected choice, preserved from the request."
+    },
+    "inputMode": {
+      "type": "string",
+      "enum": ["interactive", "text_alias", "canonical_text", "defaulted"],
+      "description": "How the user input was captured."
+    },
+    "renderMode": {
+      "type": "string",
+      "enum": ["interactive", "text_fallback", "unsupported"],
+      "description": "How the harness presented the choices."
+    },
+    "selectedAt": {
+      "type": "string",
+      "format": "date-time",
+      "minLength": 1,
+      "description": "ISO-8601 timestamp of the selection."
+    }
+  }
+}

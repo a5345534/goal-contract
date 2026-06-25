@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a5345534/goal-contract/schemas/choice-action-request.schema.json",
+  "title": "Choice Action Request",
+  "description": "Harness-neutral bounded choice/action request. Each choice describes a selectable decision with stable semantics, aliases, and fallback text so any harness can render it interactively or as a text prompt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requestId", "title", "choices", "fallbackPrompt", "allowTextAliases"],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable id for the decision prompt instance."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short user-facing title for the decision."
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional explanatory text shown with the choices."
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/choice" },
+      "description": "Ordered set of selectable choices. Choice ids and aliases must be unique within the request."
+    },
+    "fallbackPrompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Text prompt representation for non-interactive surfaces."
+    },
+    "defaultChoiceId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional default choice id for timeout or explicit default behaviour."
+    },
+    "allowTextAliases": {
+      "type": "boolean",
+      "description": "Whether numeric and short text aliases may be accepted as input."
+    },
+    "allowDisabledOverride": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether a disabled choice may be selected despite its disabled state."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional non-authoritative context for consumers."
+    }
+  },
+  "$defs": {
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "canonicalValue", "aliases"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable choice id unique within the request."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Visible label shown to the user."
+        },
+        "canonicalValue": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Machine-readable value persisted by the consumer."
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Accepted numeric and short text input aliases."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional supporting text shown with the choice."
+        },
+        "disabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the choice is currently unavailable."
+        },
+        "disabledReason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required when disabled is true."
+        }
+      }
+    }
+  }
+}

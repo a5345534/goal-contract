@@ -16,6 +16,8 @@
     "./schemas/model-class-catalog.schema.json": "./schemas/model-class-catalog.schema.json",
     "./schemas/model-binding.schema.json": "./schemas/model-binding.schema.json",
     "./schemas/model-resolution.schema.json": "./schemas/model-resolution.schema.json",
+    "./schemas/choice-action-request.schema.json": "./schemas/choice-action-request.schema.json",
+    "./schemas/choice-action-selection-result.schema.json": "./schemas/choice-action-selection-result.schema.json",
     "./catalogs/model-classes.json": "./catalogs/model-classes.json"
   },
   "files": [
