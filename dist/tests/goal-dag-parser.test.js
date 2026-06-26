@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseGoalDagFileContent, parseGoalDagFileDocument } from "../goal-dag-parser.js";
+import { resolveGoalQualityProfiles } from "../goal-dag-types.js";
 import { SUPPORTED_REQUIRED_EVIDENCE } from "../validation-evidence.js";
 const minimalDag = {
     version: 1,
@@ -75,6 +76,7 @@ test("accepts full valid DAG with defaults and model routing", () => {
             workspaceStrategy: "native-git-worktree",
             completionGates: ["controller-validation"],
             thinkingLevel: "high",
+            qualityProfiles: ["incremental-implementation", "test-driven-change"],
         },
         modelRouting: {
             scenarios: {
@@ -88,6 +90,7 @@ test("accepts full valid DAG with defaults and model routing", () => {
                 objective: "A",
                 workspace: { worktreeSlug: "node-a" },
                 risk: "high",
+                qualityProfiles: ["code-review-required"],
             },
             {
                 id: "node-b",
@@ -107,8 +110,14 @@ test("accepts full valid DAG with defaults and model routing", () => {
     };
     const doc = parseGoalDagFileDocument(dag);
     assert.equal(doc.defaults?.thinkingLevel, "high");
+    assert.deepEqual(doc.defaults?.qualityProfiles, ["incremental-implementation", "test-driven-change"]);
+    assert.deepEqual(doc.nodes[0].qualityProfiles, ["code-review-required"]);
     assert.equal(doc.nodes.length, 2);
     assert.equal(doc.nodes[1].after?.length, 1);
+});
+test("resolves quality profiles from defaults and node with stable de-duplication", () => {
+    assert.deepEqual(resolveGoalQualityProfiles({ qualityProfiles: ["incremental-implementation", "test-driven-change"] }, { qualityProfiles: ["test-driven-change", "code-review-required"] }), ["incremental-implementation", "test-driven-change", "code-review-required"]);
+    assert.deepEqual(resolveGoalQualityProfiles(["docs-required", "ship-preflight"], ["docs-required", "observability-required"]), ["docs-required", "ship-preflight", "observability-required"]);
 });
 // ---------------------------------------------------------------------------
 // Rejection: structure
@@ -175,6 +184,31 @@ test("rejects unknown node keys", () => {
         objective: "x",
         nodes: [{ id: "a", objective: "x", produces: [] }],
     }), /unsupported field/);
+});
+// ---------------------------------------------------------------------------
+// Rejection: qualityProfiles
+// ---------------------------------------------------------------------------
+test("rejects unsupported qualityProfiles", () => {
+    assert.throws(() => parseGoalDagFileDocument({
+        version: 1,
+        objective: "x",
+        defaults: { qualityProfiles: ["unsupported-profile"] },
+        nodes: [{ id: "a", objective: "x" }],
+    }), /quality profile/);
+});
+test("rejects duplicate qualityProfiles", () => {
+    assert.throws(() => parseGoalDagFileDocument({
+        version: 1,
+        objective: "x",
+        nodes: [{ id: "a", objective: "x", qualityProfiles: ["docs-required", "docs-required"] }],
+    }), /duplicate quality profile/);
+});
+test("rejects empty qualityProfiles", () => {
+    assert.throws(() => parseGoalDagFileDocument({
+        version: 1,
+        objective: "x",
+        nodes: [{ id: "a", objective: "x", qualityProfiles: [] }],
+    }), /qualityProfiles.*must not be empty/);
 });
 // ---------------------------------------------------------------------------
 // Rejection: requiredEvidence

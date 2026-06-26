@@ -12,6 +12,26 @@
  */
 import type { GoalModelRoutingConfig, GoalDagRisk } from "./model-routing.js";
 import type { GoalValidationEvidenceRequirement } from "./validation-evidence.js";
+/**
+ * Closed vocabulary of quality profiles that control how downstream runtimes
+ * prompt, validate, and complete DAG nodes.
+ *
+ * New profiles require a subsequent governed contract change.
+ */
+export declare const ALL_GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight"];
+/** Compatibility alias for producer/runtime code that imports the shorter name. */
+export declare const GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight"];
+export type GoalQualityProfile = (typeof ALL_GOAL_QUALITY_PROFILES)[number];
+export declare const ALL_GOAL_QUALITY_PROFILES_SET: ReadonlySet<string>;
+/** Compatibility alias for producer/runtime code that imports the shorter name. */
+export declare const GOAL_QUALITY_PROFILE_SET: ReadonlySet<string>;
+export declare function isGoalQualityProfile(value: string): value is GoalQualityProfile;
+export declare function requireGoalQualityProfile(value: unknown, path: string): GoalQualityProfile;
+type QualityProfileSource = readonly GoalQualityProfile[] | {
+    qualityProfiles?: readonly GoalQualityProfile[];
+} | undefined;
+/** Resolve defaults + node quality profiles with stable first-seen de-duplication. */
+export declare function resolveGoalQualityProfiles(defaults: QualityProfileSource, node: QualityProfileSource): GoalQualityProfile[];
 export interface GoalDagConflictHints {
     files?: string[];
     modules?: string[];
@@ -57,6 +77,7 @@ export interface GoalDagFileDefaults {
     conflicts?: GoalDagConflictHints;
     modelScenario?: string;
     thinkingLevel?: string;
+    qualityProfiles?: GoalQualityProfile[];
 }
 export interface GoalDagFileNode {
     id: string;
@@ -74,4 +95,6 @@ export interface GoalDagFileNode {
     completionGates?: string[];
     modelScenario?: string;
     thinkingLevel?: string;
+    qualityProfiles?: GoalQualityProfile[];
 }
+export {};

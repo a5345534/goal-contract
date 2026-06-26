@@ -15,6 +15,80 @@ import type { GoalModelRoutingConfig, GoalDagRisk } from "./model-routing.js";
 import type { GoalValidationEvidenceRequirement } from "./validation-evidence.js";
 
 // ---------------------------------------------------------------------------
+// Quality profiles
+// ---------------------------------------------------------------------------
+
+/**
+ * Closed vocabulary of quality profiles that control how downstream runtimes
+ * prompt, validate, and complete DAG nodes.
+ *
+ * New profiles require a subsequent governed contract change.
+ */
+export const ALL_GOAL_QUALITY_PROFILES = [
+  "incremental-implementation",
+  "test-driven-change",
+  "code-review-required",
+  "independent-audit",
+  "security-sensitive-review",
+  "api-contract-change",
+  "database-migration",
+  "docs-required",
+  "observability-required",
+  "ship-preflight",
+] as const;
+
+/** Compatibility alias for producer/runtime code that imports the shorter name. */
+export const GOAL_QUALITY_PROFILES = ALL_GOAL_QUALITY_PROFILES;
+
+export type GoalQualityProfile = (typeof ALL_GOAL_QUALITY_PROFILES)[number];
+
+export const ALL_GOAL_QUALITY_PROFILES_SET: ReadonlySet<string> =
+  new Set(ALL_GOAL_QUALITY_PROFILES);
+
+/** Compatibility alias for producer/runtime code that imports the shorter name. */
+export const GOAL_QUALITY_PROFILE_SET = ALL_GOAL_QUALITY_PROFILES_SET;
+
+export function isGoalQualityProfile(value: string): value is GoalQualityProfile {
+  return ALL_GOAL_QUALITY_PROFILES_SET.has(value);
+}
+
+export function requireGoalQualityProfile(value: unknown, path: string): GoalQualityProfile {
+  if (typeof value !== "string" || !isGoalQualityProfile(value)) {
+    throw new Error(
+      `Invalid quality profile at ${path}: ${JSON.stringify(value)}. ` +
+        `Supported values are: ${ALL_GOAL_QUALITY_PROFILES.join(", ")}`,
+    );
+  }
+  return value;
+}
+
+type QualityProfileSource =
+  | readonly GoalQualityProfile[]
+  | { qualityProfiles?: readonly GoalQualityProfile[] }
+  | undefined;
+
+/** Resolve defaults + node quality profiles with stable first-seen de-duplication. */
+export function resolveGoalQualityProfiles(
+  defaults: QualityProfileSource,
+  node: QualityProfileSource,
+): GoalQualityProfile[] {
+  const seen = new Set<GoalQualityProfile>();
+  const resolved: GoalQualityProfile[] = [];
+  for (const profile of [...qualityProfileList(defaults), ...qualityProfileList(node)]) {
+    if (seen.has(profile)) continue;
+    seen.add(profile);
+    resolved.push(profile);
+  }
+  return resolved;
+}
+
+function qualityProfileList(source: QualityProfileSource): readonly GoalQualityProfile[] {
+  if (!source) return [];
+  if (Array.isArray(source)) return source as readonly GoalQualityProfile[];
+  return (source as { qualityProfiles?: readonly GoalQualityProfile[] }).qualityProfiles ?? [];
+}
+
+// ---------------------------------------------------------------------------
 // Conflict hints
 // ---------------------------------------------------------------------------
 
@@ -88,6 +162,7 @@ export interface GoalDagFileDefaults {
   conflicts?: GoalDagConflictHints;
   modelScenario?: string;
   thinkingLevel?: string;
+  qualityProfiles?: GoalQualityProfile[];
 }
 
 export interface GoalDagFileNode {
@@ -106,4 +181,5 @@ export interface GoalDagFileNode {
   completionGates?: string[];
   modelScenario?: string;
   thinkingLevel?: string;
+  qualityProfiles?: GoalQualityProfile[];
 }

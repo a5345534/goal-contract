@@ -12,6 +12,7 @@
  */
 import { parseGoalModelRoutingConfig, } from "./model-routing.js";
 import { requireSupportedRequiredEvidence, } from "./validation-evidence.js";
+import { requireGoalQualityProfile } from "./goal-dag-types.js";
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -66,7 +67,7 @@ function parseDefaults(input, path) {
         throw new Error(`Invalid goal DAG file: ${path} must be an object`);
     assertKnownKeys(input, [
         "outputs", "validators", "workspaceStrategy", "completionGates",
-        "conflicts", "modelScenario", "thinkingLevel",
+        "conflicts", "modelScenario", "thinkingLevel", "qualityProfiles",
     ], path);
     const defaults = {};
     if (input.outputs !== undefined)
@@ -83,6 +84,8 @@ function parseDefaults(input, path) {
         defaults.modelScenario = requireNonEmptyString(input.modelScenario, `${path}.modelScenario`);
     if (input.thinkingLevel !== undefined)
         defaults.thinkingLevel = requireNonEmptyString(input.thinkingLevel, `${path}.thinkingLevel`);
+    if (input.qualityProfiles !== undefined)
+        defaults.qualityProfiles = parseQualityProfiles(input.qualityProfiles, `${path}.qualityProfiles`);
     return defaults;
 }
 // ---------------------------------------------------------------------------
@@ -94,7 +97,7 @@ function parseNode(input, path) {
     assertKnownKeys(input, [
         "id", "objective", "after", "outputs", "validators", "conflicts",
         "scope", "kind", "validation", "workspaceStrategy", "workspace",
-        "risk", "completionGates", "modelScenario", "thinkingLevel",
+        "risk", "completionGates", "modelScenario", "thinkingLevel", "qualityProfiles",
     ], path);
     const id = requireKebabId(input.id, `${path}.id`);
     const objective = requireNonEmptyString(input.objective, `${path}.objective`);
@@ -125,6 +128,8 @@ function parseNode(input, path) {
         node.modelScenario = requireNonEmptyString(input.modelScenario, `${path}.modelScenario`);
     if (input.thinkingLevel !== undefined)
         node.thinkingLevel = requireNonEmptyString(input.thinkingLevel, `${path}.thinkingLevel`);
+    if (input.qualityProfiles !== undefined)
+        node.qualityProfiles = parseQualityProfiles(input.qualityProfiles, `${path}.qualityProfiles`);
     return node;
 }
 // ---------------------------------------------------------------------------
@@ -219,6 +224,26 @@ function parseRequiredEvidence(input, path) {
         }
         seen.add(token);
         result.push(token);
+    }
+    return result;
+}
+// ---------------------------------------------------------------------------
+// Quality profiles
+// ---------------------------------------------------------------------------
+function parseQualityProfiles(input, path) {
+    if (!Array.isArray(input))
+        throw new Error(`Invalid goal DAG file: ${path} must be an array`);
+    if (input.length === 0)
+        throw new Error(`Invalid goal DAG file: ${path} must not be empty`);
+    const seen = new Set();
+    const result = [];
+    for (let i = 0; i < input.length; i++) {
+        const profile = requireGoalQualityProfile(input[i], `${path}[${i}]`);
+        if (seen.has(profile)) {
+            throw new Error(`Invalid goal DAG file: ${path} contains duplicate quality profile: ${JSON.stringify(profile)}`);
+        }
+        seen.add(profile);
+        result.push(profile);
     }
     return result;
 }

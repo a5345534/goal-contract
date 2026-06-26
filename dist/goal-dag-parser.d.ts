@@ -10,7 +10,7 @@
  * slots.  Those operations (`planGoalDagFromFileDocument`,
  * `createGoalDagNodes`, etc.) belong in goal-runner.
  */
-import type { GoalDagConflictHints, GoalDagFileDefaults, GoalDagFileDocument, GoalDagFileNode, GoalDagValidationContract, GoalValidationArtifactLock } from "./goal-dag-types.js";
-export type { GoalDagConflictHints, GoalDagFileDefaults, GoalDagFileDocument, GoalDagFileNode, GoalDagValidationContract, GoalValidationArtifactLock, };
+import type { GoalDagConflictHints, GoalDagFileDefaults, GoalDagFileDocument, GoalDagFileNode, GoalDagValidationContract, GoalQualityProfile, GoalValidationArtifactLock } from "./goal-dag-types.js";
+export type { GoalDagConflictHints, GoalDagFileDefaults, GoalDagFileDocument, GoalDagFileNode, GoalDagValidationContract, GoalQualityProfile, GoalValidationArtifactLock, };
 export declare function parseGoalDagFileContent(content: string): GoalDagFileDocument;
 export declare function parseGoalDagFileDocument(input: unknown): GoalDagFileDocument;

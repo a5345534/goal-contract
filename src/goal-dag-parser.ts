@@ -20,12 +20,14 @@ import {
   requireSupportedRequiredEvidence,
   type GoalValidationEvidenceRequirement,
 } from "./validation-evidence.js";
+import { requireGoalQualityProfile } from "./goal-dag-types.js";
 import type {
   GoalDagConflictHints,
   GoalDagFileDefaults,
   GoalDagFileDocument,
   GoalDagFileNode,
   GoalDagValidationContract,
+  GoalQualityProfile,
   GoalValidationArtifactLock,
 } from "./goal-dag-types.js";
 
@@ -35,6 +37,7 @@ export type {
   GoalDagFileDocument,
   GoalDagFileNode,
   GoalDagValidationContract,
+  GoalQualityProfile,
   GoalValidationArtifactLock,
 };
 
@@ -106,7 +109,7 @@ function parseDefaults(input: unknown, path: string): GoalDagFileDefaults {
     input,
     [
       "outputs", "validators", "workspaceStrategy", "completionGates",
-      "conflicts", "modelScenario", "thinkingLevel",
+      "conflicts", "modelScenario", "thinkingLevel", "qualityProfiles",
     ],
     path,
   );
@@ -119,6 +122,7 @@ function parseDefaults(input: unknown, path: string): GoalDagFileDefaults {
   if (input.conflicts !== undefined) defaults.conflicts = parseConflicts(input.conflicts, `${path}.conflicts`);
   if (input.modelScenario !== undefined) defaults.modelScenario = requireNonEmptyString(input.modelScenario, `${path}.modelScenario`);
   if (input.thinkingLevel !== undefined) defaults.thinkingLevel = requireNonEmptyString(input.thinkingLevel, `${path}.thinkingLevel`);
+  if (input.qualityProfiles !== undefined) defaults.qualityProfiles = parseQualityProfiles(input.qualityProfiles, `${path}.qualityProfiles`);
   return defaults;
 }
 
@@ -133,7 +137,7 @@ function parseNode(input: unknown, path: string): GoalDagFileNode {
     [
       "id", "objective", "after", "outputs", "validators", "conflicts",
       "scope", "kind", "validation", "workspaceStrategy", "workspace",
-      "risk", "completionGates", "modelScenario", "thinkingLevel",
+      "risk", "completionGates", "modelScenario", "thinkingLevel", "qualityProfiles",
     ],
     path,
   );
@@ -155,6 +159,7 @@ function parseNode(input: unknown, path: string): GoalDagFileNode {
   if (input.completionGates !== undefined) node.completionGates = parseStringArray(input.completionGates, `${path}.completionGates`);
   if (input.modelScenario !== undefined) node.modelScenario = requireNonEmptyString(input.modelScenario, `${path}.modelScenario`);
   if (input.thinkingLevel !== undefined) node.thinkingLevel = requireNonEmptyString(input.thinkingLevel, `${path}.thinkingLevel`);
+  if (input.qualityProfiles !== undefined) node.qualityProfiles = parseQualityProfiles(input.qualityProfiles, `${path}.qualityProfiles`);
 
   return node;
 }
@@ -255,6 +260,27 @@ function parseRequiredEvidence(
     result.push(token);
   }
 
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Quality profiles
+// ---------------------------------------------------------------------------
+
+function parseQualityProfiles(input: unknown, path: string): GoalQualityProfile[] {
+  if (!Array.isArray(input)) throw new Error(`Invalid goal DAG file: ${path} must be an array`);
+  if (input.length === 0) throw new Error(`Invalid goal DAG file: ${path} must not be empty`);
+
+  const seen = new Set<string>();
+  const result: GoalQualityProfile[] = [];
+  for (let i = 0; i < input.length; i++) {
+    const profile = requireGoalQualityProfile(input[i], `${path}[${i}]`);
+    if (seen.has(profile)) {
+      throw new Error(`Invalid goal DAG file: ${path} contains duplicate quality profile: ${JSON.stringify(profile)}`);
+    }
+    seen.add(profile);
+    result.push(profile);
+  }
   return result;
 }
 
