@@ -1,0 +1,127 @@
+{
+  "title": "Invalid and Empty Candidate Examples",
+  "description": "Demonstrates various invalid and edge-case shapes that are rejected by the contract parser. These ensure fail-closed behavior at parse time.",
+  "rejectedExamples": [
+    {
+      "label": "Empty bindings object",
+      "input": {
+        "version": 1,
+        "harness": "pi",
+        "bindings": {}
+      },
+      "expectedError": "bindings must not be empty",
+      "reason": "A catalog with no bindings provides no resolution targets."
+    },
+    {
+      "label": "Empty candidate chain (v2)",
+      "input": {
+        "version": 2,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "candidates": []
+          }
+        }
+      },
+      "expectedError": "candidates must not be empty",
+      "reason": "A candidate chain must have at least one candidate to resolve."
+    },
+    {
+      "label": "Candidate chain in v1 catalog",
+      "input": {
+        "version": 1,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "candidates": [
+              { "model": "placeholder/a", "declaredCapabilities": { "reasoning": "high" } }
+            ]
+          }
+        }
+      },
+      "expectedError": "candidates requires catalog version 2",
+      "reason": "Candidate chains are only supported in version 2 catalogs."
+    },
+    {
+      "label": "Whitespace-only model name",
+      "input": {
+        "version": 2,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "candidates": [
+              { "model": "   ", "declaredCapabilities": { "reasoning": "high" } }
+            ]
+          }
+        }
+      },
+      "expectedError": "expected non-empty string at model",
+      "reason": "Model name must be a non-empty trimmed string."
+    },
+    {
+      "label": "Invalid binding id (camelCase)",
+      "input": {
+        "version": 1,
+        "harness": "pi",
+        "bindings": {
+          "myBinding": {
+            "model": "placeholder/a",
+            "declaredCapabilities": { "reasoning": "high" }
+          }
+        }
+      },
+      "expectedError": "must match pattern",
+      "reason": "Binding ids must be kebab-case: lowercase, digits, hyphens, dots, underscores only."
+    },
+    {
+      "label": "Missing model field",
+      "input": {
+        "version": 2,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "candidates": [
+              { "declaredCapabilities": { "reasoning": "high" } }
+            ]
+          }
+        }
+      },
+      "expectedError": "model",
+      "reason": "Every candidate must specify a model."
+    },
+    {
+      "label": "Retry policy with zero attempts",
+      "input": {
+        "version": 2,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "candidates": [
+              { "model": "placeholder/a", "declaredCapabilities": { "reasoning": "high" } }
+            ],
+            "retryPolicy": { "attemptsPerCandidate": 0 }
+          }
+        }
+      },
+      "expectedError": "positive integer",
+      "reason": "attemptsPerCandidate must be a positive integer >= 1."
+    },
+    {
+      "label": "Unknown binding-level keys",
+      "input": {
+        "version": 2,
+        "harness": "pi",
+        "bindings": {
+          "impl": {
+            "model": "placeholder/a",
+            "declaredCapabilities": { "reasoning": "high" },
+            "extraField": "bad"
+          }
+        }
+      },
+      "expectedError": "extraField is not supported",
+      "reason": "Single-model bindings only allow model, declaredCapabilities, and notes."
+    }
+  ],
+  "notes": "All the above inputs are rejected at parse time by parseGoalModelBindingCatalog. This fail-closed design ensures invalid bindings are never accidentally used in resolution."
+}

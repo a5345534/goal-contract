@@ -1,0 +1,57 @@
+{
+  "title": "Version 2 Candidate-Chain Binding",
+  "description": "A version 2 binding catalog using ordered candidate chains with retry policy. Each binding maps a binding id to an ordered array of candidates that the resolver walks first-match-wins.",
+  "schemaRef": "model-binding.schema.json",
+  "bindingCatalog": {
+    "version": 2,
+    "harness": "pi",
+    "bindings": {
+      "frontier": {
+        "candidates": [
+          {
+            "model": "placeholder/frontier-strong",
+            "declaredCapabilities": {
+              "reasoning": "very_high",
+              "contextWindowTokens": 200000,
+              "toolUse": "required",
+              "structuredOutput": "preferred",
+              "formatFollowing": "high",
+              "sourceCitation": "preferred"
+            }
+          },
+          {
+            "model": "placeholder/frontier-fallback",
+            "declaredCapabilities": {
+              "reasoning": "high",
+              "contextWindowTokens": 128000,
+              "toolUse": "required",
+              "structuredOutput": "preferred",
+              "formatFollowing": "high"
+            },
+            "notes": "Downgrade fallback when frontier-strong unavailable"
+          }
+        ],
+        "retryPolicy": {
+          "attemptsPerCandidate": 2
+        },
+        "notes": "Frontier class with operator-ordered fallback chain"
+      },
+      "spark": {
+        "candidates": [
+          {
+            "model": "placeholder/spark-fast",
+            "declaredCapabilities": {
+              "reasoning": "low",
+              "contextWindowTokens": 128000,
+              "toolUse": "required",
+              "formatFollowing": "medium"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "resolutionStrategy": "first-match-wins: the resolver walks candidates in order and stops at the first one whose compliance status is 'resolved' or 'warn' (depending on fallbackPolicy.onUnavailable).",
+  "retrySemantics": "retryPolicy.attemptsPerCandidate controls how many times each candidate is retried before moving to the next. Absent = one attempt per candidate.",
+  "notes": "Version 2 catalogs may also contain legacy single-model bindings (model + declaredCapabilities without a candidates array); these are normalized to a single-candidate chain."
+}

@@ -1,0 +1,215 @@
+{
+  "title": "Under-Capable Candidate Compliance Examples",
+  "description": "Demonstrates how evaluateGoalModelBindingCompliance evaluates candidates that do not meet the minimum requirements of a model class across each capability dimension.",
+  "modelClass": {
+    "id": "strict-reviewer",
+    "minimumRequirements": {
+      "reasoning": "high",
+      "contextWindowTokens": 128000,
+      "toolUse": "required",
+      "structuredOutput": "strict",
+      "formatFollowing": "high",
+      "sourceCitation": "preferred",
+      "privacy": "local-only"
+    },
+    "fallbackPolicy": {
+      "allowDowngrade": true,
+      "onUnavailable": "warn"
+    }
+  },
+  "scenarios": [
+    {
+      "label": "Capable — all requirements met",
+      "candidate": {
+        "model": "placeholder/capable",
+        "declaredCapabilities": {
+          "reasoning": "very_high",
+          "contextWindowTokens": 256000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": true,
+        "downgraded": false,
+        "missingCapabilities": [],
+        "status": "resolved"
+      }
+    },
+    {
+      "label": "Under-capable: reasoning too low",
+      "candidate": {
+        "model": "placeholder/low-reasoning",
+        "declaredCapabilities": {
+          "reasoning": "low",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["reasoning"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: context window too small",
+      "candidate": {
+        "model": "placeholder/small-context",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 64000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["contextWindowTokens"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: tool use insufficient",
+      "candidate": {
+        "model": "placeholder/no-tools",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 128000,
+          "toolUse": "none",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["toolUse"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: structured output insufficient",
+      "candidate": {
+        "model": "placeholder/no-struct",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "preferred",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["structuredOutput"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: format following insufficient",
+      "candidate": {
+        "model": "placeholder/bad-format",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "low",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["formatFollowing"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: source citation insufficient",
+      "candidate": {
+        "model": "placeholder/no-cite",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "none",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["sourceCitation"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: privacy mismatch",
+      "candidate": {
+        "model": "placeholder/cloud-only",
+        "declaredCapabilities": {
+          "reasoning": "high",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "strict",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "privacy": "cloud-ok"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["privacy"],
+        "status": "warn"
+      }
+    },
+    {
+      "label": "Under-capable: multiple deficits combined",
+      "candidate": {
+        "model": "placeholder/multi-weak",
+        "declaredCapabilities": {
+          "reasoning": "low",
+          "contextWindowTokens": 64000,
+          "toolUse": "none",
+          "structuredOutput": "none",
+          "formatFollowing": "low",
+          "sourceCitation": "none"
+        }
+      },
+      "compliance": {
+        "satisfiesMinimum": false,
+        "downgraded": true,
+        "missingCapabilities": ["reasoning", "contextWindowTokens", "toolUse", "structuredOutput", "formatFollowing", "sourceCitation", "privacy"],
+        "status": "warn"
+      }
+    }
+  ],
+  "notes": [
+    "costSensitivity is advisory and does not cause a candidate to be marked under-capable.",
+    "When fallbackPolicy.allowDowngrade=false and onUnavailable='block', under-capable candidates get status 'blocked'.",
+    "Under-capable candidates with a warn or fallback-to-implementation policy get status 'warn' and are accepted by the resolver."
+  ]
+}

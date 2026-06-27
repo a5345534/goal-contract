@@ -1,0 +1,271 @@
+{
+  "title": "Model Fallback Evidence Serialization",
+  "description": "Demonstrates the complete GoalModelResolution shape with full fallback evidence: attemptedCandidates, switchEvents, and exhaustedChain. The resolver serializes this payload to provide full auditability of model routing decisions.",
+  "schemaRef": "model-resolution.schema.json",
+  "scenarios": [
+    {
+      "label": "Full fallback chain — first candidate succeeded",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "role": "implementer",
+          "modelScenario": "implementation",
+          "modelClass": "implementation",
+          "minimumRequirements": {
+            "reasoning": "medium",
+            "toolUse": "required"
+          }
+        },
+        "resolved": {
+          "model": "placeholder/primary-impl",
+          "bindingSource": "catalogs/bindings/pi.json",
+          "candidateIndex": 0
+        },
+        "compliance": {
+          "satisfiesMinimum": true,
+          "downgraded": false,
+          "missingCapabilities": []
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/primary-impl",
+            "compliance": {
+              "satisfiesMinimum": true,
+              "downgraded": false,
+              "missingCapabilities": []
+            },
+            "status": "succeeded"
+          }
+        ],
+        "status": "resolved"
+      },
+      "notes": "Best case: the first (and only) candidate in the chain satisfied all requirements. No switch events, no exhausted chain."
+    },
+    {
+      "label": "Fallback to second candidate after first failed compliance",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "modelScenario": "frontier",
+          "modelClass": "frontier",
+          "minimumRequirements": {
+            "reasoning": "very_high",
+            "contextWindowTokens": 200000,
+            "toolUse": "required",
+            "structuredOutput": "preferred"
+          }
+        },
+        "resolved": {
+          "model": "placeholder/frontier-fallback",
+          "bindingSource": "catalogs/bindings/pi.json",
+          "candidateIndex": 1
+        },
+        "compliance": {
+          "satisfiesMinimum": false,
+          "downgraded": true,
+          "missingCapabilities": ["reasoning"]
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/frontier-strong",
+            "compliance": {
+              "satisfiesMinimum": false,
+              "downgraded": true,
+              "missingCapabilities": ["reasoning"]
+            },
+            "status": "failed",
+            "reason": "missing capabilities: reasoning"
+          },
+          {
+            "candidateIndex": 1,
+            "model": "placeholder/frontier-fallback",
+            "compliance": {
+              "satisfiesMinimum": true,
+              "downgraded": false,
+              "missingCapabilities": []
+            },
+            "status": "succeeded"
+          }
+        ],
+        "switchEvents": [
+          {
+            "fromCandidateIndex": 0,
+            "fromModel": "placeholder/frontier-strong",
+            "toCandidateIndex": 1,
+            "toModel": "placeholder/frontier-fallback",
+            "reason": "candidate_failed_compliance"
+          }
+        ],
+        "exhaustedChain": false,
+        "status": "resolved",
+        "reason": "fallback to frontier-fallback after candidate 0 failed compliance"
+      },
+      "notes": "The first candidate had insufficient reasoning so the resolver fell back to the second candidate. The switch event and failed attempt are both recorded."
+    },
+    {
+      "label": "All candidates exhausted — resolution blocked",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "modelClass": "value-judge",
+          "minimumRequirements": {
+            "reasoning": "very_high",
+            "toolUse": "required",
+            "structuredOutput": "strict"
+          }
+        },
+        "compliance": {
+          "satisfiesMinimum": false,
+          "downgraded": true,
+          "missingCapabilities": ["reasoning", "structuredOutput"]
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/judge-a",
+            "compliance": {
+              "satisfiesMinimum": false,
+              "downgraded": true,
+              "missingCapabilities": ["reasoning"]
+            },
+            "status": "failed",
+            "reason": "missing capabilities: reasoning"
+          },
+          {
+            "candidateIndex": 1,
+            "model": "placeholder/judge-b",
+            "compliance": {
+              "satisfiesMinimum": false,
+              "downgraded": true,
+              "missingCapabilities": ["structuredOutput"]
+            },
+            "status": "failed",
+            "reason": "missing capabilities: structuredOutput"
+          }
+        ],
+        "switchEvents": [
+          {
+            "fromCandidateIndex": 0,
+            "fromModel": "placeholder/judge-a",
+            "toCandidateIndex": 1,
+            "toModel": "placeholder/judge-b",
+            "reason": "candidate_failed_compliance"
+          }
+        ],
+        "exhaustedChain": true,
+        "status": "blocked",
+        "reason": "all 2 candidates exhausted — no capable model found"
+      },
+      "notes": "Both candidates failed compliance. All attempts are recorded (with reasons), both switch events are recorded, and exhaustedChain is true. The resolver could not resolve the request."
+    },
+    {
+      "label": "Downgraded candidate accepted under warn policy",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "modelClass": "frontier",
+          "minimumRequirements": {
+            "reasoning": "very_high",
+            "contextWindowTokens": 200000,
+            "toolUse": "required"
+          }
+        },
+        "resolved": {
+          "model": "placeholder/downgraded-frontier",
+          "candidateIndex": 0
+        },
+        "compliance": {
+          "satisfiesMinimum": false,
+          "downgraded": true,
+          "missingCapabilities": ["reasoning"]
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/downgraded-frontier",
+            "compliance": {
+              "satisfiesMinimum": false,
+              "downgraded": true,
+              "missingCapabilities": ["reasoning"]
+            },
+            "status": "succeeded",
+            "reason": "missing capabilities: reasoning"
+          }
+        ],
+        "status": "warn"
+      },
+      "notes": "Under a fallback policy with allowDowngrade=true and onUnavailable='warn', a candidate that doesn't satisfy all minimum requirements is still accepted with status 'warn'."
+    },
+    {
+      "label": "Attempted candidate with 'skipped' status",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "modelClass": "implementation",
+          "minimumRequirements": { "reasoning": "high" }
+        },
+        "compliance": {
+          "satisfiesMinimum": true,
+          "downgraded": false,
+          "missingCapabilities": []
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/already-resolved",
+            "compliance": {
+              "satisfiesMinimum": true,
+              "downgraded": false,
+              "missingCapabilities": []
+            },
+            "status": "skipped",
+            "reason": "already resolved by previous attempt"
+          }
+        ],
+        "status": "resolved"
+      },
+      "notes": "The 'skipped' status indicates a candidate was bypassed without an attempt (e.g., prerequisite failure, policy skip, or already-resolved state)."
+    },
+    {
+      "label": "Attempted candidate with 'error' status",
+      "resolutionEvidence": {
+        "schemaVersion": "1.0",
+        "harness": "pi",
+        "requested": {
+          "modelClass": "implementation",
+          "minimumRequirements": { "reasoning": "high" }
+        },
+        "compliance": {
+          "satisfiesMinimum": false,
+          "downgraded": true,
+          "missingCapabilities": []
+        },
+        "attemptedCandidates": [
+          {
+            "candidateIndex": 0,
+            "model": "placeholder/gateway-timeout",
+            "compliance": {
+              "satisfiesMinimum": true,
+              "downgraded": false,
+              "missingCapabilities": []
+            },
+            "status": "error",
+            "reason": "provider gateway timeout"
+          }
+        ],
+        "exhaustedChain": true,
+        "status": "blocked",
+        "reason": "all candidates errored"
+      },
+      "notes": "The 'error' status indicates a non-recoverable error occurred during the attempt. This differs from 'failed' (compliance failure)."
+    }
+  ],
+  "serializationNotes": "All resolution evidence can be round-tripped through parseGoalModelResolutionJson (JSON → object) and JSON.stringify (object → JSON) without loss."
+}

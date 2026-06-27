@@ -1,0 +1,74 @@
+{
+  "title": "Legacy v1 Single-Model Binding",
+  "description": "A version 1 binding catalog using single-model (legacy) bindings. Each binding maps a binding id directly to a model+capabilities entry, with no candidate chain.",
+  "schemaRef": "model-binding.schema.json",
+  "bindingCatalog": {
+    "version": 1,
+    "harness": "pi",
+    "bindings": {
+      "controller": {
+        "model": "placeholder/legacy-ctl",
+        "declaredCapabilities": {
+          "reasoning": "very_high",
+          "contextWindowTokens": 256000,
+          "toolUse": "required",
+          "structuredOutput": "preferred",
+          "formatFollowing": "high",
+          "sourceCitation": "preferred",
+          "costSensitivity": "medium",
+          "privacy": "cloud-ok"
+        },
+        "notes": "Legacy controller binding — no fallback candidates"
+      },
+      "implementation": {
+        "model": "placeholder/legacy-impl",
+        "declaredCapabilities": {
+          "reasoning": "medium",
+          "contextWindowTokens": 128000,
+          "toolUse": "required",
+          "structuredOutput": "preferred",
+          "formatFollowing": "medium"
+        }
+      }
+    }
+  },
+  "normalizedEquivalent": {
+    "version": 1,
+    "harness": "pi",
+    "bindings": {
+      "controller": {
+        "candidates": [
+          {
+            "model": "placeholder/legacy-ctl",
+            "declaredCapabilities": {
+              "reasoning": "very_high",
+              "contextWindowTokens": 256000,
+              "toolUse": "required",
+              "structuredOutput": "preferred",
+              "formatFollowing": "high",
+              "sourceCitation": "preferred",
+              "costSensitivity": "medium",
+              "privacy": "cloud-ok"
+            },
+            "notes": "Legacy controller binding — no fallback candidates"
+          }
+        ]
+      },
+      "implementation": {
+        "candidates": [
+          {
+            "model": "placeholder/legacy-impl",
+            "declaredCapabilities": {
+              "reasoning": "medium",
+              "contextWindowTokens": 128000,
+              "toolUse": "required",
+              "structuredOutput": "preferred",
+              "formatFollowing": "medium"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "notes": "When parsed by parseNormalizedGoalModelBindingCatalog, each legacy binding is normalized to a single-candidate chain. The normalized shape is identical to a version 2 binding with one candidate."
+}
