@@ -15,7 +15,7 @@ but does not ship adapter binding instances.** Harness binding catalogs
 | Module | Purpose |
 | --- | --- |
 | `model-class.ts` | Abstract `modelClass` vocabulary and minimum-requirements contract |
-| `model-binding.ts` | Harness binding shape (`modelClass` → concrete model mapping) |
+| `model-binding.ts` | Harness binding shape (`modelClass` → ordered concrete model candidate chain) |
 | `model-resolution.ts` | Runtime model resolution result shape |
 | `openspec-source-manifest.ts` | `source-manifest.json` shape and parser |
 | `validation-evidence.ts` | Canonical `requiredEvidence` token registry |
@@ -24,6 +24,8 @@ but does not ship adapter binding instances.** Harness binding catalogs
 | `goal-dag-parser.ts` | Pure Goal DAG file parser (no runtime materialisation) |
 
 ## Schemas
+
+`schemas/model-binding.schema.json` accepts legacy version 1 single-model bindings and version 2 ordered candidate-chain bindings. Parsers normalize either shape to an effective candidate list; empty or invalid chains are rejected fail-closed.
 
 - `schemas/source-manifest.schema.json`
 - `schemas/goal-dag.schema.json`

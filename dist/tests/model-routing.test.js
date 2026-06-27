@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { evaluateGoalModelBindingCompliance, parseGoalModelBindingCatalog, parseGoalModelClassCatalog, parseGoalModelResolution, parseGoalModelRoutingConfig, parseGoalModelRoutingConfigJson, } from "../index.js";
+import { evaluateGoalModelBindingCompliance, getGoalModelBindingCandidates, parseGoalModelBindingCatalog, parseGoalModelClassCatalog, parseGoalModelResolution, parseGoalModelRoutingConfig, parseGoalModelRoutingConfigJson, } from "../index.js";
 const validConfig = {
     scenarios: {
         controller: { modelClass: "controller" },
@@ -84,7 +84,7 @@ test("binding catalog parses", () => {
             },
         },
     });
-    assert.equal(catalog.bindings.controller.model, "openai-codex/gpt-5.5");
+    assert.equal(getGoalModelBindingCandidates(catalog.bindings.controller)[0]?.model, "openai-codex/gpt-5.5");
 });
 test("resolution report parses", () => {
     const report = parseGoalModelResolution({
@@ -111,7 +111,7 @@ test("binding compliance passes when capabilities satisfy requirements", () => {
             },
         },
     });
-    const binding = parseGoalModelBindingCatalog({
+    const binding = getGoalModelBindingCandidates(parseGoalModelBindingCatalog({
         version: 1,
         harness: "pi",
         bindings: {
@@ -120,7 +120,7 @@ test("binding compliance passes when capabilities satisfy requirements", () => {
                 declaredCapabilities: { reasoning: "very_high", toolUse: "required" },
             },
         },
-    }).bindings.controller;
+    }).bindings.controller)[0];
     const compliance = evaluateGoalModelBindingCompliance(classes.modelClasses.controller, binding);
     assert.equal(compliance.status, "resolved");
     assert.equal(compliance.satisfiesMinimum, true);
@@ -135,7 +135,7 @@ test("binding compliance blocks when required very_high reasoning is missing", (
             },
         },
     });
-    const binding = parseGoalModelBindingCatalog({
+    const binding = getGoalModelBindingCandidates(parseGoalModelBindingCatalog({
         version: 1,
         harness: "pi",
         bindings: {
@@ -144,7 +144,7 @@ test("binding compliance blocks when required very_high reasoning is missing", (
                 declaredCapabilities: { reasoning: "high" },
             },
         },
-    }).bindings["value-judge"];
+    }).bindings["value-judge"])[0];
     const compliance = evaluateGoalModelBindingCompliance(classes.modelClasses["value-judge"], binding);
     assert.equal(compliance.status, "blocked");
     assert.deepEqual(compliance.missingCapabilities, ["reasoning"]);
@@ -177,13 +177,13 @@ test("downgrade is only allowed when fallbackPolicy.allowDowngrade=true", () => 
             },
         },
     }).modelClasses.fallback;
-    const binding = parseGoalModelBindingCatalog({
+    const binding = getGoalModelBindingCandidates(parseGoalModelBindingCatalog({
         version: 1,
         harness: "pi",
         bindings: {
             candidate: { model: "some/model", declaredCapabilities: { reasoning: "high" } },
         },
-    }).bindings.candidate;
+    }).bindings.candidate)[0];
     assert.equal(evaluateGoalModelBindingCompliance(blockedClass, binding).status, "blocked");
     assert.equal(evaluateGoalModelBindingCompliance(warnClass, binding).status, "warn");
     assert.equal(evaluateGoalModelBindingCompliance(fallbackClass, binding).status, "warn");

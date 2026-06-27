@@ -14,31 +14,63 @@ export function parseGoalModelBindingCatalog(input, path = "modelBindingCatalog"
     if (!isRecord(input))
         throw new Error(`Invalid goal model binding catalog: ${path} must be an object`);
     assertKnownKeys(input, ["version", "harness", "bindings"], path);
-    if (input.version !== 1)
-        throw new Error(`Invalid goal model binding catalog: ${path}.version must be 1`);
+    const version = parseCatalogVersion(input.version, `${path}.version`);
     const harness = requireNonEmptyString(input.harness, `${path}.harness`);
     if (!isRecord(input.bindings))
         throw new Error(`Invalid goal model binding catalog: ${path}.bindings must be an object`);
     const bindings = {};
     for (const [id, value] of Object.entries(input.bindings)) {
         const bindingId = requireBindingId(id, `${path}.bindings key`);
-        bindings[bindingId] = parseGoalModelBinding(value, `${path}.bindings.${id}`);
+        bindings[bindingId] = parseGoalModelBinding(value, `${path}.bindings.${id}`, version);
     }
     if (Object.keys(bindings).length === 0)
         throw new Error(`Invalid goal model binding catalog: ${path}.bindings must not be empty`);
-    return { version: 1, harness, bindings };
+    return { version, harness, bindings };
 }
-export function parseGoalModelBinding(input, path) {
+export function parseNormalizedGoalModelBindingCatalog(input, path = "modelBindingCatalog") {
+    return normalizeGoalModelBindingCatalog(parseGoalModelBindingCatalog(input, path), path);
+}
+export function parseGoalModelBinding(input, path, version = 2) {
     if (!isRecord(input))
         throw new Error(`Invalid goal model binding: ${path} must be an object`);
-    assertKnownKeys(input, ["model", "declaredCapabilities", "notes"], path);
-    const model = requireNonEmptyString(input.model, `${path}.model`);
-    const declaredCapabilities = parseGoalModelMinimumRequirements(input.declaredCapabilities, `${path}.declaredCapabilities`);
-    const notes = input.notes === undefined ? undefined : requireNonEmptyString(input.notes, `${path}.notes`);
-    return notes ? { model, declaredCapabilities, notes } : { model, declaredCapabilities };
+    if ("candidates" in input) {
+        if (version !== 2)
+            throw new Error(`Invalid goal model binding: ${path}.candidates requires catalog version 2`);
+        return parseGoalModelCandidateChainBinding(input, path);
+    }
+    return parseGoalModelSingleBinding(input, path);
+}
+export function normalizeGoalModelBinding(binding, path = "modelBinding") {
+    if (isGoalModelCandidateChainBinding(binding)) {
+        if (binding.candidates.length === 0)
+            throw new Error(`Invalid goal model binding: ${path}.candidates must not be empty`);
+        return {
+            candidates: binding.candidates.map((candidate, index) => normalizeGoalModelBindingCandidate(candidate, `${path}.candidates[${index}]`)),
+            ...(binding.retryPolicy ? { retryPolicy: { ...binding.retryPolicy } } : {}),
+            ...(binding.notes ? { notes: binding.notes } : {}),
+        };
+    }
+    return {
+        candidates: [normalizeGoalModelBindingCandidate(binding, path)],
+    };
+}
+export function normalizeGoalModelBindingCatalog(catalog, path = "modelBindingCatalog") {
+    const bindings = {};
+    for (const [id, binding] of Object.entries(catalog.bindings)) {
+        bindings[id] = normalizeGoalModelBinding(binding, `${path}.bindings.${id}`);
+    }
+    if (Object.keys(bindings).length === 0)
+        throw new Error(`Invalid goal model binding catalog: ${path}.bindings must not be empty`);
+    return { version: catalog.version, harness: catalog.harness, bindings };
+}
+export function getGoalModelBindingCandidates(binding, path = "modelBinding") {
+    return normalizeGoalModelBinding(binding, path).candidates;
 }
 export function evaluateGoalModelBindingCompliance(modelClass, binding) {
-    const missingCapabilities = missingMinimumCapabilities(modelClass.minimumRequirements, binding.declaredCapabilities);
+    return evaluateGoalModelBindingCandidateCompliance(modelClass, binding);
+}
+export function evaluateGoalModelBindingCandidateCompliance(modelClass, candidate) {
+    const missingCapabilities = missingMinimumCapabilities(modelClass.minimumRequirements, candidate.declaredCapabilities);
     const satisfiesMinimum = missingCapabilities.length === 0;
     const downgraded = !satisfiesMinimum;
     if (satisfiesMinimum)
@@ -48,6 +80,13 @@ export function evaluateGoalModelBindingCompliance(modelClass, binding) {
         return { satisfiesMinimum, downgraded, missingCapabilities, status: "warn" };
     }
     return { satisfiesMinimum, downgraded, missingCapabilities, status: "blocked" };
+}
+export function evaluateGoalModelBindingCandidateChainCompliance(modelClass, binding) {
+    return normalizeGoalModelBinding(binding).candidates.map((candidate, candidateIndex) => ({
+        candidateIndex,
+        model: candidate.model,
+        ...evaluateGoalModelBindingCandidateCompliance(modelClass, candidate),
+    }));
 }
 export function missingMinimumCapabilities(minimum, declared) {
     const missing = [];
@@ -67,6 +106,55 @@ export function missingMinimumCapabilities(minimum, declared) {
         missing.push("privacy");
     // costSensitivity is advisory in the shared contract and does not make a binding under-capable.
     return [...new Set(missing)];
+}
+function parseCatalogVersion(input, path) {
+    if (input !== 1 && input !== 2)
+        throw new Error(`Invalid goal model binding catalog: ${path} must be 1 or 2`);
+    return input;
+}
+function parseGoalModelSingleBinding(input, path) {
+    assertKnownKeys(input, ["model", "declaredCapabilities", "notes"], path);
+    return parseGoalModelBindingCandidate(input, path);
+}
+function parseGoalModelCandidateChainBinding(input, path) {
+    assertKnownKeys(input, ["candidates", "retryPolicy", "notes"], path);
+    if (!Array.isArray(input.candidates))
+        throw new Error(`Invalid goal model binding: ${path}.candidates must be an array`);
+    if (input.candidates.length === 0)
+        throw new Error(`Invalid goal model binding: ${path}.candidates must not be empty`);
+    const candidates = input.candidates.map((candidate, index) => parseGoalModelBindingCandidate(candidate, `${path}.candidates[${index}]`));
+    const retryPolicy = input.retryPolicy === undefined ? undefined : parseRetryPolicy(input.retryPolicy, `${path}.retryPolicy`);
+    const notes = input.notes === undefined ? undefined : requireNonEmptyString(input.notes, `${path}.notes`);
+    return {
+        candidates,
+        ...(retryPolicy ? { retryPolicy } : {}),
+        ...(notes ? { notes } : {}),
+    };
+}
+function parseGoalModelBindingCandidate(input, path) {
+    if (!isRecord(input))
+        throw new Error(`Invalid goal model binding candidate: ${path} must be an object`);
+    assertKnownKeys(input, ["model", "declaredCapabilities", "notes"], path);
+    const model = requireNonEmptyString(input.model, `${path}.model`);
+    const declaredCapabilities = parseGoalModelMinimumRequirements(input.declaredCapabilities, `${path}.declaredCapabilities`);
+    const notes = input.notes === undefined ? undefined : requireNonEmptyString(input.notes, `${path}.notes`);
+    return notes ? { model, declaredCapabilities, notes } : { model, declaredCapabilities };
+}
+function parseRetryPolicy(input, path) {
+    if (!isRecord(input))
+        throw new Error(`Invalid goal model binding retry policy: ${path} must be an object`);
+    assertKnownKeys(input, ["attemptsPerCandidate"], path);
+    const attemptsPerCandidate = input.attemptsPerCandidate;
+    if (typeof attemptsPerCandidate !== "number" || !Number.isInteger(attemptsPerCandidate) || attemptsPerCandidate < 1) {
+        throw new Error(`Invalid goal model binding retry policy: ${path}.attemptsPerCandidate must be a positive integer`);
+    }
+    return { attemptsPerCandidate };
+}
+function normalizeGoalModelBindingCandidate(candidate, path) {
+    return parseGoalModelBindingCandidate(candidate, path);
+}
+function isGoalModelCandidateChainBinding(binding) {
+    return "candidates" in binding;
 }
 function compareCapabilityLevel(left, right) {
     return compareOrdered(left, right, ["none", "low", "medium", "high", "very_high"]);
