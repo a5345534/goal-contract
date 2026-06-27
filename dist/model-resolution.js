@@ -25,6 +25,8 @@ export function parseGoalModelResolution(input, path = "modelResolution") {
         "compliance",
         "attemptedCandidates",
         "switchEvents",
+        "candidatePlan",
+        "retryPolicy",
         "exhaustedChain",
         "status",
         "reason",
@@ -43,6 +45,12 @@ export function parseGoalModelResolution(input, path = "modelResolution") {
     const switchEvents = input.switchEvents === undefined
         ? undefined
         : parseSwitchEvents(input.switchEvents, `${path}.switchEvents`);
+    const candidatePlan = input.candidatePlan === undefined
+        ? undefined
+        : parseCandidatePlan(input.candidatePlan, `${path}.candidatePlan`);
+    const retryPolicy = input.retryPolicy === undefined
+        ? undefined
+        : parseRetryPolicy(input.retryPolicy, `${path}.retryPolicy`);
     const exhaustedChain = input.exhaustedChain === undefined
         ? undefined
         : requireBoolean(input.exhaustedChain, `${path}.exhaustedChain`);
@@ -58,6 +66,8 @@ export function parseGoalModelResolution(input, path = "modelResolution") {
         compliance,
         ...(attemptedCandidates ? { attemptedCandidates } : {}),
         ...(switchEvents ? { switchEvents } : {}),
+        ...(candidatePlan ? { candidatePlan } : {}),
+        ...(retryPolicy ? { retryPolicy } : {}),
         ...(exhaustedChain !== undefined ? { exhaustedChain } : {}),
         status,
         ...(reason ? { reason } : {}),
@@ -69,28 +79,40 @@ export function parseGoalModelResolution(input, path = "modelResolution") {
 // ---------------------------------------------------------------------------
 /**
  * Evaluate a candidate chain binding against a model class and produce
- * the full resolution evidence fields (attemptedCandidates, switchEvents,
- * exhaustedChain, resolved.candidateIndex).
+ * resolution evidence plus the full runtime candidate plan.
  *
- * This is a pure evaluation function that simulates first-match-wins
- * fallback: it walks candidates in order, appending attempt records,
- * and stops at the first candidate whose compliance status is
- * `"resolved"` or `"warn"` (depending on the fallback policy).  If no
- * candidate satisfies, all are recorded as `"failed"` and
- * `exhaustedChain` is set to true.
- *
- * Returns the resolution-level evidence that the resolver should embed
- * in the final `GoalModelResolution`.
+ * `attemptedCandidates` records the candidates actually walked during initial
+ * resolution and stops at the first eligible candidate. `candidatePlan` keeps
+ * every operator-ordered candidate with capability eligibility so the runner can
+ * later switch to unattempted eligible candidates after runtime model-switchable
+ * failures.
  */
 export function evaluateGoalModelResolutionCandidates(modelClass, binding) {
     const candidates = getGoalModelBindingCandidates(binding);
     const attemptedCandidates = [];
     const switchEvents = [];
+    const candidatePlan = [];
     let resolvedCandidateIndex;
     for (let index = 0; index < candidates.length; index++) {
         const candidate = candidates[index];
         const compliance = evaluateGoalModelBindingCandidateCompliance(modelClass, candidate);
-        // Record the attempt
+        const eligible = compliance.status === "resolved" || compliance.status === "warn";
+        const reason = !eligible && compliance.missingCapabilities.length > 0
+            ? `missing capabilities: ${compliance.missingCapabilities.join(", ")}`
+            : undefined;
+        candidatePlan.push({
+            candidateIndex: index,
+            model: candidate.model,
+            compliance: {
+                satisfiesMinimum: compliance.satisfiesMinimum,
+                downgraded: compliance.downgraded,
+                missingCapabilities: compliance.missingCapabilities,
+            },
+            eligible,
+            ...(reason ? { reason } : {}),
+        });
+        if (resolvedCandidateIndex !== undefined)
+            continue;
         const attempt = {
             candidateIndex: index,
             model: candidate.model,
@@ -99,27 +121,15 @@ export function evaluateGoalModelResolutionCandidates(modelClass, binding) {
                 downgraded: compliance.downgraded,
                 missingCapabilities: compliance.missingCapabilities,
             },
-            status: compliance.status === "resolved" ? "succeeded" : "failed",
+            status: eligible ? "succeeded" : "failed",
+            ...(reason ? { reason } : {}),
         };
-        if (compliance.status === "warn" &&
-            modelClass.fallbackPolicy.onUnavailable === "warn") {
-            // warn policy accepts downgraded candidates
-            attempt.status = "succeeded";
-        }
-        if (compliance.status === "warn" &&
-            modelClass.fallbackPolicy.onUnavailable === "fallback-to-implementation") {
-            // fallback-to-implementation also accepts downgraded candidates
-            attempt.status = "succeeded";
-        }
-        if (!compliance.satisfiesMinimum) {
-            attempt.reason = `missing capabilities: ${compliance.missingCapabilities.join(", ")}`;
-        }
         attemptedCandidates.push(attempt);
         if (attempt.status === "succeeded") {
             resolvedCandidateIndex = index;
-            break;
+            continue;
         }
-        // Record switch to next candidate if available
+        // Record resolution-time fallback to the next candidate if available.
         if (index + 1 < candidates.length) {
             switchEvents.push({
                 fromCandidateIndex: index,
@@ -131,9 +141,12 @@ export function evaluateGoalModelResolutionCandidates(modelClass, binding) {
         }
     }
     const exhaustedChain = resolvedCandidateIndex === undefined && candidates.length > 0;
+    const retryPolicy = bindingRetryPolicy(binding);
     return {
         attemptedCandidates,
         switchEvents,
+        candidatePlan,
+        ...(retryPolicy ? { retryPolicy } : {}),
         exhaustedChain,
         resolvedCandidateIndex,
     };
@@ -238,6 +251,32 @@ function parseAttemptCompliance(input, path) {
         missingCapabilities: input.missingCapabilities.map((item, index) => requireNonEmptyString(item, `${path}.missingCapabilities[${index}]`)),
     };
 }
+function parseCandidatePlan(input, path) {
+    if (!Array.isArray(input))
+        throw new Error(`Invalid goal model resolution: ${path} must be an array`);
+    if (input.length === 0)
+        throw new Error(`Invalid goal model resolution: ${path} must not be empty`);
+    return input.map((item, index) => parseCandidatePlanEntry(item, `${path}[${index}]`));
+}
+function parseCandidatePlanEntry(input, path) {
+    if (!isRecord(input))
+        throw new Error(`Invalid goal model resolution: ${path} must be an object`);
+    assertKnownKeys(input, ["candidateIndex", "model", "compliance", "eligible", "reason"], path);
+    const candidateIndex = requireNonNegativeInteger(input.candidateIndex, `${path}.candidateIndex`);
+    const model = requireNonEmptyString(input.model, `${path}.model`);
+    const compliance = parseAttemptCompliance(input.compliance, `${path}.compliance`);
+    const eligible = requireBoolean(input.eligible, `${path}.eligible`);
+    const reason = input.reason === undefined
+        ? undefined
+        : requireNonEmptyString(input.reason, `${path}.reason`);
+    return {
+        candidateIndex,
+        model,
+        compliance,
+        eligible,
+        ...(reason ? { reason } : {}),
+    };
+}
 function parseSwitchEvents(input, path) {
     if (!Array.isArray(input))
         throw new Error(`Invalid goal model resolution: ${path} must be an array`);
@@ -260,6 +299,16 @@ function parseSwitchEvent(input, path) {
     const reason = requireNonEmptyString(input.reason, `${path}.reason`);
     return { fromCandidateIndex, fromModel, toCandidateIndex, toModel, reason };
 }
+function parseRetryPolicy(input, path) {
+    if (!isRecord(input))
+        throw new Error(`Invalid goal model resolution: ${path} must be an object`);
+    assertKnownKeys(input, ["attemptsPerCandidate"], path);
+    const attemptsPerCandidate = input.attemptsPerCandidate;
+    if (typeof attemptsPerCandidate !== "number" || !Number.isInteger(attemptsPerCandidate) || attemptsPerCandidate < 1) {
+        throw new Error(`Invalid goal model resolution: ${path}.attemptsPerCandidate must be a positive integer`);
+    }
+    return { attemptsPerCandidate };
+}
 function parseStatus(input, path) {
     if (input !== "resolved" && input !== "blocked" && input !== "warn")
         throw new Error(`Invalid goal model resolution: ${path} must be resolved, blocked, or warn`);
@@ -268,6 +317,10 @@ function parseStatus(input, path) {
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
+function bindingRetryPolicy(binding) {
+    const maybe = binding;
+    return maybe.retryPolicy ? { ...maybe.retryPolicy } : undefined;
+}
 function requireNonEmptyString(input, path) {
     if (typeof input !== "string" || !input.trim())
         throw new Error(`Invalid value at ${path}: expected non-empty string`);

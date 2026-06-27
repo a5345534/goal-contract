@@ -1,5 +1,5 @@
 import { type GoalModelClass, type GoalModelMinimumRequirements } from "./model-class.js";
-import { type GoalModelBinding } from "./model-binding.js";
+import { type GoalModelBinding, type GoalModelBindingRetryPolicy } from "./model-binding.js";
 /**
  * Per-candidate attempt record written by the resolver as it walks the
  * fallback chain.  The resolver appends a record for each candidate it
@@ -45,6 +45,28 @@ export interface GoalModelResolutionSwitchEvent {
     /** Machine-readable reason category for the switch. */
     reason: string;
 }
+/**
+ * Full operator-ordered candidate plan produced from a binding catalog. Unlike
+ * attemptedCandidates, this preserves candidates that were not selected during
+ * initial resolution so the runner can switch to them later after runtime
+ * model-switchable failures.
+ */
+export interface GoalModelResolutionCandidatePlanEntry {
+    /** 0-based index into the source binding's candidate array. */
+    candidateIndex: number;
+    /** Concrete model id for this candidate. */
+    model: string;
+    /** Capability compliance evaluation for this candidate. */
+    compliance: {
+        satisfiesMinimum: boolean;
+        downgraded: boolean;
+        missingCapabilities: string[];
+    };
+    /** True when this candidate is eligible for runtime selection/fallback. */
+    eligible: boolean;
+    /** Optional human-readable reason when the candidate is ineligible. */
+    reason?: string;
+}
 export interface GoalModelResolution {
     schemaVersion: "1.0";
     harness: string;
@@ -83,6 +105,10 @@ export interface GoalModelResolution {
      * next in the chain.
      */
     switchEvents?: GoalModelResolutionSwitchEvent[];
+    /** Full ordered candidate plan used for runtime fallback switching. */
+    candidatePlan?: GoalModelResolutionCandidatePlanEntry[];
+    /** Retry policy copied from the source binding catalog, when configured. */
+    retryPolicy?: GoalModelBindingRetryPolicy;
     /**
      * True when every candidate in the chain has been exhausted without
      * a successful resolution.
@@ -95,22 +121,19 @@ export declare function parseGoalModelResolutionJson(json: string, path?: string
 export declare function parseGoalModelResolution(input: unknown, path?: string): GoalModelResolution;
 /**
  * Evaluate a candidate chain binding against a model class and produce
- * the full resolution evidence fields (attemptedCandidates, switchEvents,
- * exhaustedChain, resolved.candidateIndex).
+ * resolution evidence plus the full runtime candidate plan.
  *
- * This is a pure evaluation function that simulates first-match-wins
- * fallback: it walks candidates in order, appending attempt records,
- * and stops at the first candidate whose compliance status is
- * `"resolved"` or `"warn"` (depending on the fallback policy).  If no
- * candidate satisfies, all are recorded as `"failed"` and
- * `exhaustedChain` is set to true.
- *
- * Returns the resolution-level evidence that the resolver should embed
- * in the final `GoalModelResolution`.
+ * `attemptedCandidates` records the candidates actually walked during initial
+ * resolution and stops at the first eligible candidate. `candidatePlan` keeps
+ * every operator-ordered candidate with capability eligibility so the runner can
+ * later switch to unattempted eligible candidates after runtime model-switchable
+ * failures.
  */
 export declare function evaluateGoalModelResolutionCandidates(modelClass: GoalModelClass, binding: GoalModelBinding): {
     attemptedCandidates: GoalModelResolutionAttemptedCandidate[];
     switchEvents: GoalModelResolutionSwitchEvent[];
+    candidatePlan: GoalModelResolutionCandidatePlanEntry[];
+    retryPolicy?: GoalModelBindingRetryPolicy;
     exhaustedChain: boolean;
     resolvedCandidateIndex?: number;
 };

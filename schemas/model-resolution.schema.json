@@ -49,6 +49,12 @@
       "type": "array",
       "items": { "$ref": "#/$defs/switchEvent" }
     },
+    "candidatePlan": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/candidatePlanEntry" }
+    },
+    "retryPolicy": { "$ref": "#/$defs/retryPolicy" },
     "exhaustedChain": { "type": "boolean" },
     "status": { "enum": ["resolved", "blocked", "warn"] },
     "reason": { "type": "string", "minLength": 1 }
@@ -101,6 +107,26 @@
         "toCandidateIndex": { "type": "integer", "minimum": 0 },
         "toModel": { "type": "string", "minLength": 1 },
         "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "candidatePlanEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateIndex", "model", "compliance", "eligible"],
+      "properties": {
+        "candidateIndex": { "type": "integer", "minimum": 0 },
+        "model": { "type": "string", "minLength": 1 },
+        "compliance": { "$ref": "#/$defs/attemptCompliance" },
+        "eligible": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "retryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attemptsPerCandidate"],
+      "properties": {
+        "attemptsPerCandidate": { "type": "integer", "minimum": 1 }
       }
     }
   }

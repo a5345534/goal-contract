@@ -118,6 +118,38 @@ test("parses resolution with switchEvents and exhaustedChain", () => {
   assert.equal(report.status, "blocked");
 });
 
+test("parses resolution with candidatePlan and retryPolicy", () => {
+  const report = parseGoalModelResolution({
+    schemaVersion: "1.0",
+    harness: "pi",
+    requested: {
+      modelClass: "implementation",
+      minimumRequirements: { reasoning: "high" },
+    },
+    resolved: { model: "placeholder/model-a", candidateIndex: 0 },
+    compliance: { satisfiesMinimum: true, downgraded: false, missingCapabilities: [] },
+    candidatePlan: [
+      {
+        candidateIndex: 0,
+        model: "placeholder/model-a",
+        compliance: { satisfiesMinimum: true, downgraded: false, missingCapabilities: [] },
+        eligible: true,
+      },
+      {
+        candidateIndex: 1,
+        model: "placeholder/model-b",
+        compliance: { satisfiesMinimum: true, downgraded: false, missingCapabilities: [] },
+        eligible: true,
+      },
+    ],
+    retryPolicy: { attemptsPerCandidate: 2 },
+    status: "resolved",
+  });
+  assert.equal(report.candidatePlan?.length, 2);
+  assert.equal(report.candidatePlan?.[1]?.model, "placeholder/model-b");
+  assert.equal(report.retryPolicy?.attemptsPerCandidate, 2);
+});
+
 test("parses resolution from JSON string", () => {
   const json = JSON.stringify({
     schemaVersion: "1.0",
@@ -174,6 +206,9 @@ test("evaluateGoalModelResolutionCandidates resolves first capable candidate", (
   assert.equal(result.switchEvents.length, 1);
   assert.equal(result.switchEvents[0]?.fromCandidateIndex, 0);
   assert.equal(result.switchEvents[0]?.toCandidateIndex, 1);
+  assert.equal(result.candidatePlan.length, 2);
+  assert.equal(result.candidatePlan[0]?.eligible, false);
+  assert.equal(result.candidatePlan[1]?.eligible, true);
 });
 
 test("evaluateGoalModelResolutionCandidates exhausts chain when all fail", () => {
@@ -197,6 +232,7 @@ test("evaluateGoalModelResolutionCandidates exhausts chain when all fail", () =>
           { model: "placeholder/b", declaredCapabilities: { reasoning: "high" } },
           { model: "placeholder/c", declaredCapabilities: { reasoning: "high" } },
         ],
+        retryPolicy: { attemptsPerCandidate: 3 },
       },
     },
   }).bindings.implementation;
@@ -206,6 +242,9 @@ test("evaluateGoalModelResolutionCandidates exhausts chain when all fail", () =>
   assert.equal(result.exhaustedChain, true);
   assert.equal(result.attemptedCandidates.length, 3);
   assert.ok(result.attemptedCandidates.every((a) => a.status === "failed"));
+  assert.equal(result.candidatePlan.length, 3);
+  assert.ok(result.candidatePlan.every((a) => a.eligible === false));
+  assert.equal(result.retryPolicy?.attemptsPerCandidate, 3);
   // 3 candidates → 2 switch events (0→1, 1→2)
   assert.equal(result.switchEvents.length, 2);
 });
@@ -239,6 +278,9 @@ test("evaluateGoalModelResolutionCandidates resolves first candidate when capabl
   assert.equal(result.exhaustedChain, false);
   assert.equal(result.attemptedCandidates.length, 1);
   assert.equal(result.attemptedCandidates[0]?.status, "succeeded");
+  assert.equal(result.candidatePlan.length, 2);
+  assert.equal(result.candidatePlan[0]?.eligible, true);
+  assert.equal(result.candidatePlan[1]?.model, "placeholder/b");
   assert.equal(result.switchEvents.length, 0);
 });
 
