@@ -14,6 +14,9 @@ export const SUPPORTED_REQUIRED_EVIDENCE = [
     "non-test-diff-present",
     "post-merge-validation-ran",
     "audit-report-present",
+    "candidate-fallback-chain-used",
+    "exhausted-all-candidates",
+    "candidate-switch-recorded",
 ];
 /** O(1) lookup set built from the canonical token list. */
 export const SUPPORTED_REQUIRED_EVIDENCE_SET = new Set(SUPPORTED_REQUIRED_EVIDENCE);

@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/a5345534/goal-contract/schemas/model-resolution.schema.json",
   "title": "Goal Model Resolution Evidence",
+  "description": "Resolution evidence record produced by the harness resolver. Extended with candidate-fallback fields for v2 binding catalogs.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "harness", "requested", "compliance", "status"],
@@ -25,7 +26,8 @@
       "required": ["model"],
       "properties": {
         "model": { "type": "string", "minLength": 1 },
-        "bindingSource": { "type": "string", "minLength": 1 }
+        "bindingSource": { "type": "string", "minLength": 1 },
+        "candidateIndex": { "type": "integer", "minimum": 0 }
       }
     },
     "compliance": {
@@ -38,6 +40,16 @@
         "missingCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }
       }
     },
+    "attemptedCandidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/attemptedCandidate" }
+    },
+    "switchEvents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/switchEvent" }
+    },
+    "exhaustedChain": { "type": "boolean" },
     "status": { "enum": ["resolved", "blocked", "warn"] },
     "reason": { "type": "string", "minLength": 1 }
   },
@@ -55,6 +67,40 @@
         "sourceCitation": { "enum": ["none", "preferred", "required"] },
         "costSensitivity": { "enum": ["low", "medium", "high"] },
         "privacy": { "enum": ["cloud-ok", "local-only"] }
+      }
+    },
+    "attemptCompliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["satisfiesMinimum", "downgraded", "missingCapabilities"],
+      "properties": {
+        "satisfiesMinimum": { "type": "boolean" },
+        "downgraded": { "type": "boolean" },
+        "missingCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "attemptedCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateIndex", "model", "compliance", "status"],
+      "properties": {
+        "candidateIndex": { "type": "integer", "minimum": 0 },
+        "model": { "type": "string", "minLength": 1 },
+        "compliance": { "$ref": "#/$defs/attemptCompliance" },
+        "status": { "enum": ["succeeded", "failed", "skipped", "error"] },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "switchEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromCandidateIndex", "fromModel", "toCandidateIndex", "toModel", "reason"],
+      "properties": {
+        "fromCandidateIndex": { "type": "integer", "minimum": 0 },
+        "fromModel": { "type": "string", "minLength": 1 },
+        "toCandidateIndex": { "type": "integer", "minimum": 0 },
+        "toModel": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
       }
     }
   }

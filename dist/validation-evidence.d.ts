@@ -7,7 +7,7 @@
  * parser / validator — must reference this registry instead of
  * maintaining its own copy.
  */
-export declare const SUPPORTED_REQUIRED_EVIDENCE: readonly ["validators-ran", "locked-artifacts-unchanged", "implementation-diff-present", "non-test-diff-present", "post-merge-validation-ran", "audit-report-present"];
+export declare const SUPPORTED_REQUIRED_EVIDENCE: readonly ["validators-ran", "locked-artifacts-unchanged", "implementation-diff-present", "non-test-diff-present", "post-merge-validation-ran", "audit-report-present", "candidate-fallback-chain-used", "exhausted-all-candidates", "candidate-switch-recorded"];
 /** Closed union derived from the canonical token list. */
 export type GoalValidationEvidenceRequirement = (typeof SUPPORTED_REQUIRED_EVIDENCE)[number];
 /** O(1) lookup set built from the canonical token list. */

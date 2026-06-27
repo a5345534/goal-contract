@@ -42,8 +42,14 @@ test("requireSupportedRequiredEvidence returns typed token for valid input", () 
   assert.equal(token, "validators-ran");
 });
 
-test("SUPPORTED_REQUIRED_EVIDENCE length is 6", () => {
-  assert.equal(SUPPORTED_REQUIRED_EVIDENCE.length, 6);
+test("SUPPORTED_REQUIRED_EVIDENCE length is 9", () => {
+  assert.equal(SUPPORTED_REQUIRED_EVIDENCE.length, 9);
+});
+
+test("new resolution evidence tokens are accepted", () => {
+  assert.ok(isSupportedRequiredEvidence("candidate-fallback-chain-used"));
+  assert.ok(isSupportedRequiredEvidence("exhausted-all-candidates"));
+  assert.ok(isSupportedRequiredEvidence("candidate-switch-recorded"));
 });
 
 test("all tokens are included", () => {
@@ -54,6 +60,9 @@ test("all tokens are included", () => {
     "non-test-diff-present",
     "post-merge-validation-ran",
     "audit-report-present",
+    "candidate-fallback-chain-used",
+    "exhausted-all-candidates",
+    "candidate-switch-recorded",
   ];
   assert.deepEqual([...SUPPORTED_REQUIRED_EVIDENCE].sort(), expected.sort());
 });

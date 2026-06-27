@@ -15,6 +15,9 @@ export const SUPPORTED_REQUIRED_EVIDENCE = [
   "non-test-diff-present",
   "post-merge-validation-ran",
   "audit-report-present",
+  "candidate-fallback-chain-used",
+  "exhausted-all-candidates",
+  "candidate-switch-recorded",
 ] as const;
 
 /** Closed union derived from the canonical token list. */
