@@ -1,6 +1,6 @@
 # Implementation Discipline Contract Spec
 
-Status: draft  
+Status: implemented (v1)  
 Owner: `goal-contract`  
 Applies to: shared schemas/types consumed by `goal-spec`, `goal-dag`, and `goal-runner`
 
@@ -59,3 +59,47 @@ The runtime may initially carry this envelope in transcript text, but the contra
 - A future contract change can represent `implementation-discipline` without embedding provider-specific prompt text.
 - A future contract change can serialize controller-facing questions without requiring subagents to contact users directly.
 - Downstream repositories can independently adopt the profile while preserving existing DAG and status compatibility.
+
+## Implementation Notes (v1)
+
+### Quality Profile
+
+`implementation-discipline` has been added to the shared `GoalQualityProfile` closed union:
+
+| Location | Change |
+|---|---|
+| `src/goal-dag-types.ts` | Added `"implementation-discipline"` to `ALL_GOAL_QUALITY_PROFILES` array and re-exported via `GoalQualityProfile` type. |
+| `schemas/goal-dag.schema.json` | Added `"implementation-discipline"` to the `qualityProfile` JSON Schema enum. |
+
+The parser (`goal-dag-parser.ts`) already calls `requireGoalQualityProfile()` for validation, so the new value is automatically accepted without parser changes.
+
+### Controller-Facing Question Envelope
+
+A new typed controller-facing question envelope has been added as an advisory contract:
+
+| Location | Content |
+|---|---|
+| `src/controller-question.ts` | `ControllerQuestion` interface, `ControllerQuestionOption` interface, `ControllerQuestionNeededFrom` union, `parseControllerQuestion()` validator, `isControllerQuestion()` type guard. |
+| `schemas/controller-question.schema.json` | JSON Schema for the question envelope (advisory; not embedded in `goal-dag.schema.json` yet). |
+| `src/tests/controller-question.test.ts` | Unit tests for valid and invalid question shapes. |
+
+The envelope fields match the design spec exactly:
+- `question`, `whyItMatters`, `options[].{id,summary,tradeoffs}`, `recommendedDefault`, `blocking`, `neededFrom`
+
+### Boundaries Preserved
+
+- No provider/model ids, harness-specific prompt prose, or implementation-level instructions appear in any shared schema or type.
+- The profile is additive; existing DAGs and goals that omit `implementation-discipline` remain valid.
+- The question envelope type is available for downstream consumers but not yet required as a DAG node field.
+
+### TypeScript Exports
+
+```typescript
+import {
+  parseControllerQuestion,
+  isControllerQuestion,
+  type ControllerQuestion,
+  type ControllerQuestionOption,
+  type ControllerQuestionNeededFrom,
+} from "goal-contract";
+```

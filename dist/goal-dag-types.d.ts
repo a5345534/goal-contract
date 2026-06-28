@@ -18,9 +18,9 @@ import type { GoalValidationEvidenceRequirement } from "./validation-evidence.js
  *
  * New profiles require a subsequent governed contract change.
  */
-export declare const ALL_GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight"];
+export declare const ALL_GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight", "implementation-discipline"];
 /** Compatibility alias for producer/runtime code that imports the shorter name. */
-export declare const GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight"];
+export declare const GOAL_QUALITY_PROFILES: readonly ["incremental-implementation", "test-driven-change", "code-review-required", "independent-audit", "security-sensitive-review", "api-contract-change", "database-migration", "docs-required", "observability-required", "ship-preflight", "implementation-discipline"];
 export type GoalQualityProfile = (typeof ALL_GOAL_QUALITY_PROFILES)[number];
 export declare const ALL_GOAL_QUALITY_PROFILES_SET: ReadonlySet<string>;
 /** Compatibility alias for producer/runtime code that imports the shorter name. */

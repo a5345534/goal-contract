@@ -8,4 +8,5 @@ export * from "./model-resolution.js";
 export * from "./goal-dag-types.js";
 export * from "./goal-dag-parser.js";
 export * from "./choice-action.js";
+export * from "./controller-question.js";
 //# sourceMappingURL=index.js.map

@@ -35,6 +35,7 @@ export const ALL_GOAL_QUALITY_PROFILES = [
   "docs-required",
   "observability-required",
   "ship-preflight",
+  "implementation-discipline",
 ] as const;
 
 /** Compatibility alias for producer/runtime code that imports the shorter name. */

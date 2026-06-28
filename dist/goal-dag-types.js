@@ -30,6 +30,7 @@ export const ALL_GOAL_QUALITY_PROFILES = [
     "docs-required",
     "observability-required",
     "ship-preflight",
+    "implementation-discipline",
 ];
 /** Compatibility alias for producer/runtime code that imports the shorter name. */
 export const GOAL_QUALITY_PROFILES = ALL_GOAL_QUALITY_PROFILES;
